@@ -6,11 +6,18 @@ import {
 import OrdersInbox from './OrdersInbox';
 import CalendarView from './CalendarView';
 import InventoryManager from './InventoryManager';
+import LandingManager from './LandingManager';
 import { formatCurrency } from '../../services/storageService';
+import { Layout } from 'lucide-react';
 
 export default function AdminDashboard({
   bookings,
   equipmentList,
+  settings,
+  onSaveSettings,
+  combosList,
+  onSaveCombo,
+  onDeleteCombo,
   onUpdateBookingStatus,
   onOpenPayment,
   onOpenChecklist,
@@ -18,7 +25,8 @@ export default function AdminDashboard({
   onSaveEquipment,
   onDeleteEquipment
 }) {
-  const [adminTab, setAdminTab] = useState('orders'); // 'orders', 'calendar', 'inventory'
+  const [adminTab, setAdminTab] = useState('orders'); // 'orders', 'calendar', 'inventory', 'landing'
+
 
   // KPI Calculations
   const pendingOrders = bookings.filter(b => b.status === 'Pendiente');
@@ -162,6 +170,18 @@ export default function AdminDashboard({
           <Package className="w-4 h-4" />
           <span>Inventario & Stock</span>
         </button>
+
+        <button
+          onClick={() => setAdminTab('landing')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            adminTab === 'landing'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+          }`}
+        >
+          <Layout className="w-4 h-4" />
+          <span>🎨 Tu Página Web</span>
+        </button>
       </div>
 
       {/* Tab Panels */}
@@ -189,6 +209,17 @@ export default function AdminDashboard({
           onDeleteEquipment={onDeleteEquipment}
         />
       )}
+
+      {adminTab === 'landing' && (
+        <LandingManager
+          settings={settings}
+          onSaveSettings={onSaveSettings}
+          combosList={combosList}
+          onSaveCombo={onSaveCombo}
+          onDeleteCombo={onDeleteCombo}
+        />
+      )}
+
 
     </div>
   );

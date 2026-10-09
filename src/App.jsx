@@ -10,15 +10,25 @@ import ChecklistModal from './components/Admin/ChecklistModal';
 import ReceiptModal from './components/Admin/ReceiptModal';
 import SettingsModal from './components/Admin/SettingsModal';
 import AdminAuthGuard from './components/Admin/AdminAuthGuard';
+import FaqSection from './components/Catalog/FaqSection';
 
 import { 
   getStoredEquipment, saveStoredEquipment,
   getStoredCombos, saveStoredCombos,
   getStoredBookings, saveStoredBookings,
-  checkEquipmentAvailability, getStoredSettings
+  checkEquipmentAvailability, getStoredSettings, saveStoredSettings
 } from './services/storageService';
 import { CATEGORIES } from './data/initialData';
-import { Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2 } from 'lucide-react';
+import { Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, MapPin } from 'lucide-react';
+
+const InstagramIcon = ({ className = "w-4 h-4" }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+    <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+  </svg>
+);
+
 
 export default function App() {
   // Navigation state: 'catalog' o 'admin'
@@ -26,6 +36,7 @@ export default function App() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   // Business state
+
 
   const [equipmentList, setEquipmentList] = useState(getStoredEquipment);
   const [combosList, setCombosList] = useState(getStoredCombos);
@@ -176,6 +187,28 @@ export default function App() {
     setEquipmentList(prev => prev.filter(e => e.id !== id));
   };
 
+  // Combo operations
+  const handleSaveCombo = (comboData) => {
+    setCombosList(prev => {
+      const index = prev.findIndex(c => c.id === comboData.id);
+      if (index >= 0) {
+        const copy = [...prev];
+        copy[index] = comboData;
+        return copy;
+      }
+      return [comboData, ...prev];
+    });
+  };
+
+  const handleDeleteCombo = (id) => {
+    setCombosList(prev => prev.filter(c => c.id !== id));
+  };
+
+  const handleSaveSettings = (newSettings) => {
+    setSettings(newSettings);
+    saveStoredSettings(newSettings);
+  };
+
   // Filtered equipment list for catalog
   const filteredEquipment = equipmentList.filter(eq => {
     if (selectedCategory === 'Todos') return true;
@@ -204,25 +237,58 @@ export default function App() {
         {activeTab === 'catalog' && (
           <div className="space-y-8 animate-fade-in">
             
-            {/* Hero Banner */}
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-600/20 via-slate-900 to-cyan-900/20 border border-slate-800 p-6 sm:p-10 shadow-2xl">
-              <div className="relative z-10 max-w-2xl">
-                <div className="flex items-center gap-2 mb-3">
+            {/* Dynamic Hero Banner (Configurable from Admin) */}
+            <div className="relative overflow-hidden rounded-3xl bg-[#0f1422] border border-slate-800 shadow-2xl">
+              <div className="absolute inset-0 z-0">
+                <img
+                  src={settings.heroImageUrl || "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1200&q=80"}
+                  alt={settings.businessName}
+                  className="w-full h-full object-cover opacity-25"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#090c13] via-[#090c13]/90 to-transparent" />
+              </div>
+
+              <div className="relative z-10 p-6 sm:p-10 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="px-2.5 py-1 text-[11px] font-black uppercase tracking-wider bg-amber-500 text-black rounded-lg shadow-sm">
                     {settings.businessName}
                   </span>
-                  <span className="text-xs text-slate-400 font-semibold flex items-center gap-1">
-                    <Volume2 className="w-4 h-4 text-cyan-400" />
-                    Audio Pro & DJ Gear
+                  <span className="text-xs text-amber-300/90 font-bold flex items-center gap-1 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-slate-800">
+                    <Volume2 className="w-3.5 h-3.5 text-cyan-400" />
+                    {settings.heroBadge || "Audio Pro & Cabinas DJ"}
                   </span>
                 </div>
+
                 <h1 className="text-2xl sm:text-4xl font-black text-white tracking-tight leading-tight">
-                  Alquiler de Sonido Profesional, Iluminación y Cabinas DJ
+                  {settings.heroTitle}
                 </h1>
+                
                 <p className="text-xs sm:text-sm text-slate-300 mt-2 sm:mt-3 leading-relaxed">
-                  Arma tu paquete para fiestas, matrimonios, quinceañeros y eventos corporativos. 
-                  Selecciona tu fecha, cotiza en vivo y separa tu montaje al instante vía WhatsApp.
+                  {settings.heroSubtitle}
                 </p>
+
+                {/* Coverage & Social Pills */}
+                <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-slate-300">
+                  {settings.cityCoverage && (
+                    <div className="flex items-center gap-1.5 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
+                      <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="font-semibold">{settings.cityCoverage}</span>
+                    </div>
+                  )}
+
+                  {settings.instagramUser && (
+                    <a
+                      href={`https://instagram.com/${settings.instagramUser.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-800 text-amber-400 font-semibold transition-colors"
+                    >
+                      <InstagramIcon className="w-3.5 h-3.5" />
+                      <span>{settings.instagramUser}</span>
+                    </a>
+                  )}
+
+                </div>
               </div>
             </div>
 
@@ -308,6 +374,9 @@ export default function App() {
               </section>
             )}
 
+            {/* FAQ SECTION (Configurable from Admin) */}
+            <FaqSection settings={settings} />
+
             {/* Floating Mobile Cart Action Bar */}
             {cartTotalItems > 0 && (
               <div className="fixed bottom-4 left-4 right-4 z-40 sm:hidden">
@@ -353,6 +422,11 @@ export default function App() {
               <AdminDashboard
                 bookings={bookings}
                 equipmentList={equipmentList}
+                settings={settings}
+                onSaveSettings={handleSaveSettings}
+                combosList={combosList}
+                onSaveCombo={handleSaveCombo}
+                onDeleteCombo={handleDeleteCombo}
                 onUpdateBookingStatus={handleUpdateBookingStatus}
                 onOpenPayment={(b) => setPaymentBooking(b)}
                 onOpenChecklist={(b) => setChecklistBooking(b)}
@@ -363,6 +437,7 @@ export default function App() {
             </div>
           )
         )}
+
 
 
       </main>
