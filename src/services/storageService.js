@@ -27,6 +27,28 @@ const DEFAULT_SETTINGS = {
   instagramUser: "@sound_control_dj",
   tiktokUser: "@sound_event_pro",
   showFaqSection: true,
+  gallery: [
+    {
+      title: "Montaje Bodas & Quinceañeros",
+      tag: "Social",
+      imageUrl: "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      title: "Cabina DJ & Luces Robóticas",
+      tag: "DJ Set",
+      imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      title: "Conciertos & Bandas en Vivo",
+      tag: "Live Sound",
+      imageUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80"
+    },
+    {
+      title: "Iluminación Arquitectónica Wash",
+      tag: "Iluminación",
+      imageUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=800&q=80"
+    }
+  ],
   faqs: [
     {
       question: "¿El alquiler incluye transporte, montaje y desmontaje?",
@@ -46,6 +68,7 @@ const DEFAULT_SETTINGS = {
     }
   ]
 };
+
 
 
 // Inicializadores con persistencia
@@ -127,8 +150,14 @@ export const formatDateFriendly = (dateStr) => {
   }
 };
 
-// CÁLCULO INTELIGENTE DE DISPONIBILIDAD (Anti-Cruces)
-export const checkEquipmentAvailability = (equipmentId, targetDate, bookings = null, currentBookingId = null) => {
+// CÁLCULO INTELIGENTE DE DISPONIBILIDAD (Anti-Cruces con Rango de Fechas)
+export const checkEquipmentAvailability = (
+  equipmentId, 
+  targetDate, 
+  bookings = null, 
+  currentBookingId = null,
+  targetEndDate = null
+) => {
   if (!targetDate) return { available: true, reservedCount: 0 };
   
   const allBookings = bookings || getStoredBookings();
@@ -136,6 +165,8 @@ export const checkEquipmentAvailability = (equipmentId, targetDate, bookings = n
   const item = allEquipment.find(eq => eq.id === equipmentId);
   
   if (!item) return { available: false, reservedCount: 0, stock: 0 };
+
+  const checkEnd = targetEndDate || targetDate;
 
   // Buscar reservas activas (Aprobado o En Evento) que coincidan con la fecha
   let reservedCount = 0;
@@ -145,11 +176,13 @@ export const checkEquipmentAvailability = (equipmentId, targetDate, bookings = n
     if (currentBookingId && booking.id === currentBookingId) return;
 
     if (booking.status === 'Aprobado' || booking.status === 'En Evento') {
-      const start = booking.eventDate;
-      const end = booking.endDate || booking.eventDate;
+      const bStart = booking.eventDate;
+      const bEnd = booking.endDate || booking.eventDate;
       
-      // Verificación de solapamiento de fecha (inclusive)
-      if (targetDate >= start && targetDate <= end) {
+      // Dos rangos se solapan si targetDate <= bEnd Y checkEnd >= bStart
+      const overlaps = targetDate <= bEnd && checkEnd >= bStart;
+      
+      if (overlaps) {
         booking.items.forEach(bItem => {
           if (bItem.equipmentId === equipmentId) {
             reservedCount += Number(bItem.quantity || 1);
@@ -177,6 +210,7 @@ export const generateWhatsAppLink = ({
   clientName,
   clientPhone,
   eventDate,
+  endDate,
   eventLocation,
   items,
   totalAmount,
@@ -186,11 +220,17 @@ export const generateWhatsAppLink = ({
   const settings = getStoredSettings();
   const targetNumber = (adminWhatsApp || settings.whatsappNumber).replace(/\D/g, '');
 
-  let message = `🔊 *COTIZACIÓN DE ALQUILER - SOUND & EVENT CONTROL* 🎧\n\n`;
+  let message = `🔊 *COTIZACIÓN DE ALQUILER - ${settings.businessName.toUpperCase()}* 🎧\n\n`;
   message += `📌 *Solicitud:* #${orderId}\n`;
   message += `👤 *Cliente:* ${clientName || 'Por confirmar'}\n`;
   message += `📱 *Teléfono:* ${clientPhone || 'No indicado'}\n`;
-  message += `📅 *Fecha del Evento:* ${formatDateFriendly(eventDate)}\n`;
+  
+  if (endDate && endDate !== eventDate) {
+    message += `📅 *Fechas del Evento:* Del ${formatDateFriendly(eventDate)} al ${formatDateFriendly(endDate)}\n`;
+  } else {
+    message += `📅 *Fecha del Evento:* ${formatDateFriendly(eventDate)}\n`;
+  }
+
   if (eventLocation) message += `📍 *Lugar / Locación:* ${eventLocation}\n`;
   message += `\n📦 *EQUIPOS SELECCIONADOS:*\n`;
 
@@ -210,3 +250,4 @@ export const generateWhatsAppLink = ({
   const encoded = encodeURIComponent(message);
   return `https://wa.me/${targetNumber}?text=${encoded}`;
 };
+

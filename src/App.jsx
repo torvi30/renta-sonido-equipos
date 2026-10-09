@@ -11,6 +11,8 @@ import ReceiptModal from './components/Admin/ReceiptModal';
 import SettingsModal from './components/Admin/SettingsModal';
 import AdminAuthGuard from './components/Admin/AdminAuthGuard';
 import FaqSection from './components/Catalog/FaqSection';
+import EventGallery from './components/Catalog/EventGallery';
+import Toast from './components/Toast';
 
 import { 
   getStoredEquipment, saveStoredEquipment,
@@ -19,7 +21,7 @@ import {
   checkEquipmentAvailability, getStoredSettings, saveStoredSettings
 } from './services/storageService';
 import { CATEGORIES } from './data/initialData';
-import { Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, MapPin } from 'lucide-react';
+import { Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, MapPin, Search, ArrowUpDown } from 'lucide-react';
 
 const InstagramIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -29,15 +31,12 @@ const InstagramIcon = ({ className = "w-4 h-4" }) => (
   </svg>
 );
 
-
 export default function App() {
   // Navigation state: 'catalog' o 'admin'
   const [activeTab, setActiveTab] = useState('catalog');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
   // Business state
-
-
   const [equipmentList, setEquipmentList] = useState(getStoredEquipment);
   const [combosList, setCombosList] = useState(getStoredCombos);
   const [bookings, setBookings] = useState(getStoredBookings);
@@ -51,8 +50,17 @@ export default function App() {
   };
 
   const [selectedDate, setSelectedDate] = useState(getTomorrowDate);
+  const [rentalDays, setRentalDays] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [sortBy, setSortBy] = useState('popular');
   const [cart, setCart] = useState([]);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+  };
+
 
   // Modals state
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -90,10 +98,10 @@ export default function App() {
         quantity: 1
       }];
     });
+    showToast(`🔊 Agregado: ${equipment.name}`);
   };
 
   const handleAddComboToCart = (combo) => {
-    // Agrega el combo como un item estructurado con el precio con descuento
     setCart(prev => {
       const exists = prev.find(item => item.id === combo.id);
       if (exists) {
@@ -109,6 +117,7 @@ export default function App() {
         isCombo: true
       }];
     });
+    showToast(`🎁 Combo agregado: ${combo.name}`);
     setIsCartOpen(true);
   };
 
@@ -131,6 +140,7 @@ export default function App() {
   // Booking operations
   const handleCreateBooking = (newBooking) => {
     setBookings(prev => [newBooking, ...prev]);
+    showToast(`📲 Solicitud #${newBooking.id} enviada`);
   };
 
   const handleUpdateBookingStatus = (bookingId, newStatus) => {
@@ -140,6 +150,7 @@ export default function App() {
       }
       return b;
     }));
+    showToast(`Estado actualizado: ${newStatus}`);
   };
 
   const handleSavePayment = ({ bookingId, depositAmount, balanceDue, paymentMethod, paymentNotes }) => {
@@ -155,6 +166,7 @@ export default function App() {
       }
       return b;
     }));
+    showToast('💰 Pago y saldo actualizados');
   };
 
   const handleSaveChecklist = (bookingId, checklistMap, isFull) => {
@@ -168,6 +180,7 @@ export default function App() {
       }
       return b;
     }));
+    showToast('📋 Checklist de cables guardado');
   };
 
   // Equipment operations
@@ -181,10 +194,12 @@ export default function App() {
       }
       return [equipmentData, ...prev];
     });
+    showToast('📦 Inventario actualizado');
   };
 
   const handleDeleteEquipment = (id) => {
     setEquipmentList(prev => prev.filter(e => e.id !== id));
+    showToast('🗑️ Equipo eliminado del inventario', 'warning');
   };
 
   // Combo operations
@@ -198,23 +213,49 @@ export default function App() {
       }
       return [comboData, ...prev];
     });
+    showToast('🎁 Combo guardado');
   };
 
   const handleDeleteCombo = (id) => {
     setCombosList(prev => prev.filter(c => c.id !== id));
+    showToast('🗑️ Combo eliminado', 'warning');
   };
 
   const handleSaveSettings = (newSettings) => {
     setSettings(newSettings);
     saveStoredSettings(newSettings);
+    showToast('🎨 Ajustes de Landing guardados');
   };
 
-  // Filtered equipment list for catalog
+  const calculateEndDate = (startDate, days) => {
+    if (!startDate) return '';
+    const d = new Date(startDate + 'T00:00:00');
+    d.setDate(d.getDate() + (days - 1));
+    return d.toISOString().split('T')[0];
+  };
+
+  const selectedEndDate = calculateEndDate(selectedDate, rentalDays);
+
+  // Filtered equipment list for catalog with search and sorting
   const filteredEquipment = equipmentList.filter(eq => {
-    if (selectedCategory === 'Todos') return true;
-    if (selectedCategory === 'Combos y Paquetes') return false;
-    return eq.category === selectedCategory;
+    if (selectedCategory !== 'Todos' && selectedCategory !== 'Combos y Paquetes' && eq.category !== selectedCategory) {
+      return false;
+    }
+    if (catalogSearch.trim()) {
+      const q = catalogSearch.toLowerCase();
+      const matchName = eq.name.toLowerCase().includes(q);
+      const matchCat = eq.category.toLowerCase().includes(q);
+      const matchDesc = eq.description && eq.description.toLowerCase().includes(q);
+      if (!matchName && !matchCat && !matchDesc) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    if (sortBy === 'price-low') return a.pricePerDay - b.pricePerDay;
+    if (sortBy === 'price-high') return b.pricePerDay - a.pricePerDay;
+    if (sortBy === 'popular') return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
+    return 0;
   });
+
 
   const cartTotalItems = cart.reduce((sum, it) => sum + it.quantity, 0);
 
@@ -296,6 +337,8 @@ export default function App() {
             <DateBanner
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
+              rentalDays={rentalDays}
+              setRentalDays={setRentalDays}
             />
 
             {/* Category Filter Pills */}
@@ -315,8 +358,35 @@ export default function App() {
               ))}
             </div>
 
-            {/* COMBOS SECTION (if 'Todos' or 'Combos y Paquetes') */}
-            {(selectedCategory === 'Todos' || selectedCategory === 'Combos y Paquetes') && (
+            {/* Search and Sort Filter Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111622] p-3 sm:p-3.5 rounded-2xl border border-slate-800">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar equipos por nombre o categoría (JBL, Pioneer, Luces, Humo...)"
+                  value={catalogSearch}
+                  onChange={(e) => setCatalogSearch(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/50"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="popular">Más Populares</option>
+                  <option value="price-low">Menor Precio</option>
+                  <option value="price-high">Mayor Precio</option>
+                </select>
+              </div>
+            </div>
+
+            {/* COMBOS SECTION (if 'Todos' or 'Combos y Paquetes' and no search filter) */}
+            {(selectedCategory === 'Todos' || selectedCategory === 'Combos y Paquetes') && !catalogSearch && (
               <section className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -350,32 +420,48 @@ export default function App() {
                     Equipos Individuales
                   </h2>
                   <span className="text-xs text-slate-400">
-                    {filteredEquipment.length} disponibles
+                    {filteredEquipment.length} {filteredEquipment.length === 1 ? 'equipo encontrado' : 'equipos encontrados'}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredEquipment.map(eq => {
-                    const availability = checkEquipmentAvailability(eq.id, selectedDate, bookings);
-                    const cartItem = cart.find(c => c.id === eq.id);
+                {filteredEquipment.length === 0 ? (
+                  <div className="text-center py-12 bg-[#111622] rounded-2xl border border-slate-800">
+                    <p className="text-slate-400 text-sm">No encontramos equipos que coincidan con "{catalogSearch}".</p>
+                    <button
+                      onClick={() => setCatalogSearch('')}
+                      className="mt-2 text-xs text-amber-400 font-bold hover:underline"
+                    >
+                      Limpiar búsqueda
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredEquipment.map(eq => {
+                      const availability = checkEquipmentAvailability(eq.id, selectedDate, bookings, null, selectedEndDate);
+                      const cartItem = cart.find(c => c.id === eq.id);
 
-                    return (
-                      <EquipmentCard
-                        key={eq.id}
-                        equipment={eq}
-                        availability={availability}
-                        cartItem={cartItem}
-                        onAddToCart={handleAddToCart}
-                        onUpdateCartQuantity={handleUpdateCartQuantity}
-                      />
-                    );
-                  })}
-                </div>
+                      return (
+                        <EquipmentCard
+                          key={eq.id}
+                          equipment={eq}
+                          availability={availability}
+                          cartItem={cartItem}
+                          onAddToCart={handleAddToCart}
+                          onUpdateCartQuantity={handleUpdateCartQuantity}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             )}
 
+            {/* GALLERY PORTFOLIO SECTION */}
+            <EventGallery gallery={settings.gallery} />
+
             {/* FAQ SECTION (Configurable from Admin) */}
             <FaqSection settings={settings} />
+
 
             {/* Floating Mobile Cart Action Bar */}
             {cartTotalItems > 0 && (
@@ -462,6 +548,7 @@ export default function App() {
         onClose={() => setIsCartOpen(false)}
         cart={cart}
         selectedDate={selectedDate}
+        rentalDays={rentalDays}
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveFromCart}
         onClearCart={handleClearCart}
@@ -495,6 +582,10 @@ export default function App() {
         onSettingsSaved={(newSettings) => setSettings(newSettings)}
       />
 
+      {/* TOAST NOTIFICATION */}
+      <Toast toast={toast} onClose={() => setToast(null)} />
+
     </div>
   );
 }
+

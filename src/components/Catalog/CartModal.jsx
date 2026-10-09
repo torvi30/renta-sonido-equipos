@@ -7,6 +7,7 @@ export default function CartModal({
   onClose,
   cart,
   selectedDate,
+  rentalDays = 1,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -21,7 +22,16 @@ export default function CartModal({
 
   if (!isOpen) return null;
 
-  const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const calculateEndDate = (startDate, days) => {
+    if (!startDate) return '';
+    const d = new Date(startDate + 'T00:00:00');
+    d.setDate(d.getDate() + (days - 1));
+    return d.toISOString().split('T')[0];
+  };
+
+  const endDate = calculateEndDate(selectedDate, rentalDays);
+  const dailyTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = dailyTotal * rentalDays;
   const depositAmount = totalAmount * 0.5;
 
   const handleSendWhatsApp = (e) => {
@@ -43,7 +53,8 @@ export default function CartModal({
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
       eventDate: selectedDate,
-      endDate: selectedDate,
+      endDate: endDate,
+      rentalDays: rentalDays,
       eventLocation: eventLocation.trim() || 'Por confirmar',
       status: 'Pendiente',
       items: cart.map(item => ({
@@ -71,6 +82,7 @@ export default function CartModal({
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
       eventDate: selectedDate,
+      endDate: endDate,
       eventLocation: eventLocation.trim(),
       items: cart,
       totalAmount,
@@ -81,6 +93,7 @@ export default function CartModal({
 
     setOrderSent(true);
   };
+
 
   const handleFinish = () => {
     setOrderSent(false);
@@ -107,8 +120,14 @@ export default function CartModal({
                 Cotización de Alquiler
               </h2>
               <p className="text-xs text-slate-400">
-                Fecha del Evento: <span className="text-amber-400 font-bold">{formatDateFriendly(selectedDate)}</span>
+                Fecha: <span className="text-amber-400 font-bold">{formatDateFriendly(selectedDate)}</span>
+                {rentalDays > 1 && (
+                  <span className="text-cyan-400 font-semibold ml-1">
+                    al {formatDateFriendly(endDate)} ({rentalDays} días)
+                  </span>
+                )}
               </p>
+
             </div>
           </div>
           <button
@@ -217,6 +236,18 @@ export default function CartModal({
 
               {/* Total & Deposit Breakdown */}
               <div className="bg-gradient-to-br from-slate-900 to-[#12192c] p-4 rounded-2xl border border-slate-800 space-y-2">
+                {rentalDays > 1 && (
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Subtotal x Día:</span>
+                    <span>{formatCurrency(dailyTotal)}</span>
+                  </div>
+                )}
+                {rentalDays > 1 && (
+                  <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold">
+                    <span>Duración del Arriendo:</span>
+                    <span>{rentalDays} Días</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between text-sm text-slate-300">
                   <span>Valor Total Estimado:</span>
                   <span className="text-lg font-black text-white">{formatCurrency(totalAmount)}</span>
@@ -225,6 +256,7 @@ export default function CartModal({
                   <span>Abono requerido para reservar (50%):</span>
                   <span className="font-bold text-sm">{formatCurrency(depositAmount)}</span>
                 </div>
+
                 <p className="text-[11px] text-slate-400 italic">
                   * El 50% restante se cancela al momento del montaje en la locación del evento.
                 </p>
