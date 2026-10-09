@@ -34,7 +34,7 @@ export default function DateBanner({
               Disponibilidad en Vivo
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+          <h2 className="text-base sm:text-xl font-extrabold text-white tracking-tight">
             ¿Para qué fecha necesitas los equipos de sonido?
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
@@ -45,12 +45,12 @@ export default function DateBanner({
         </div>
 
         {/* Inputs Date and Duration */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           
           {/* Selector de Fecha Inicio */}
-          <div className="flex items-center gap-2.5 bg-slate-950/90 p-2 sm:p-2.5 rounded-2xl border border-slate-700/80 shadow-inner flex-1 sm:flex-initial">
+          <div className="flex items-center gap-2.5 bg-slate-950/90 p-2.5 rounded-2xl border border-slate-700/80 shadow-inner flex-1 sm:flex-initial">
             <Calendar className="w-5 h-5 text-amber-400 flex-shrink-0" />
-            <div className="flex flex-col">
+            <div className="flex flex-col flex-1 min-w-0">
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                 Fecha del Evento
               </label>
@@ -59,24 +59,24 @@ export default function DateBanner({
                 min={today}
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="bg-transparent text-white font-semibold text-xs sm:text-sm focus:outline-none cursor-pointer"
+                className="bg-transparent text-white font-bold text-xs sm:text-sm focus:outline-none cursor-pointer w-full"
               />
             </div>
           </div>
 
           {/* Selector de Duración (Días) */}
-          <div className="flex items-center gap-2 bg-slate-950/90 p-2 sm:p-2.5 rounded-2xl border border-slate-700/80 shadow-inner">
+          <div className="flex items-center gap-2.5 bg-slate-950/90 p-2.5 rounded-2xl border border-slate-700/80 shadow-inner flex-1 sm:flex-initial">
             <Clock className="w-4 h-4 text-cyan-400 flex-shrink-0" />
-            <div className="flex flex-col">
+            <div className="flex flex-col flex-1 min-w-0">
               <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
                 Duración
               </label>
               <select
                 value={rentalDays}
                 onChange={(e) => setRentalDays(Number(e.target.value))}
-                className="bg-transparent text-amber-400 font-extrabold text-xs sm:text-sm focus:outline-none cursor-pointer"
+                className="bg-transparent text-amber-400 font-extrabold text-xs sm:text-sm focus:outline-none cursor-pointer w-full"
               >
-                <option value={1} className="bg-slate-900 text-white">1 Día (Evento puntual)</option>
+                <option value={1} className="bg-slate-900 text-white">1 Día (Evento)</option>
                 <option value={2} className="bg-slate-900 text-white">2 Días (Fin de semana)</option>
                 <option value={3} className="bg-slate-900 text-white">3 Días (Puente festivo)</option>
                 <option value={4} className="bg-slate-900 text-white">4 Días o más</option>

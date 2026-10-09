@@ -189,7 +189,7 @@ export default function CartModal({
                   {cart.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-3 bg-slate-900/90 p-3 rounded-2xl border border-slate-800"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/90 p-3 sm:p-3.5 rounded-2xl border border-slate-800"
                     >
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white truncate">{item.name}</h4>
@@ -198,33 +198,34 @@ export default function CartModal({
                         </div>
                       </div>
 
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-2">
+                      {/* Quantity Controls & Subtotal */}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/80">
                         <div className="flex items-center bg-slate-950 rounded-xl border border-slate-800 p-1">
                           <button
                             onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95"
                           >
                             <Minus className="w-3 h-3" />
                           </button>
-                          <span className="w-7 text-center font-bold text-amber-400 text-xs">
+                          <span className="w-8 text-center font-bold text-amber-400 text-xs">
                             {item.quantity}
                           </span>
                           <button
                             onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                            className="w-6 h-6 flex items-center justify-center rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700"
+                            className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 active:scale-95"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
 
-                        <span className="text-sm font-extrabold text-white min-w-[70px] text-right">
+                        <span className="text-sm font-extrabold text-white text-right">
                           {formatCurrency(item.price * item.quantity)}
                         </span>
 
                         <button
                           onClick={() => onRemoveItem(item.id)}
-                          className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"
+                          className="p-2 text-slate-500 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
+                          title="Eliminar de cotización"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

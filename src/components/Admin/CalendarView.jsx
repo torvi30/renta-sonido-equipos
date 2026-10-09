@@ -212,17 +212,21 @@ export default function CalendarView({
                       {dayNum}
                     </span>
                     {hasBookings && (
-                      <span className="flex items-center gap-1">
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                        <span className="text-[10px] text-cyan-300 font-extrabold sm:hidden">
-                          {activeBookings.length}
-                        </span>
-                      </span>
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse sm:hidden" />
                     )}
                   </div>
 
-                  {/* EVENT PILLS: Click directly to open event detail! */}
-                  <div className="space-y-1 mt-1 flex-1 flex flex-col justify-end">
+                  {/* MOBILE INDICATOR (Clean dots & count for narrow screens) */}
+                  {hasBookings && (
+                    <div className="sm:hidden flex items-center justify-center gap-1 mt-auto pt-1">
+                      <span className="text-[10px] font-black bg-cyan-950/90 text-cyan-300 border border-cyan-500/30 px-1 py-0.2 rounded leading-none">
+                        {activeBookings.length}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* DESKTOP/TABLET EVENT PILLS: Click directly to open event detail! */}
+                  <div className="hidden sm:flex sm:flex-col space-y-1 mt-1 flex-1 justify-end">
                     {activeBookings.slice(0, 2).map((b) => {
                       const colors = getStatusColor(b.status);
                       return (

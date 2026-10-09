@@ -133,7 +133,7 @@ export default function InventoryManager({ equipmentList, onSaveEquipment, onDel
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleStockQuickChange(item, -1)}
-                  className="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+                  className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs active:scale-95 flex items-center justify-center"
                 >
                   -
                 </button>
@@ -142,7 +142,7 @@ export default function InventoryManager({ equipmentList, onSaveEquipment, onDel
                 </span>
                 <button
                   onClick={() => handleStockQuickChange(item, 1)}
-                  className="w-6 h-6 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs"
+                  className="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs active:scale-95 flex items-center justify-center shadow-md shadow-amber-500/20"
                 >
                   +
                 </button>

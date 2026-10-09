@@ -200,10 +200,10 @@ _Generado desde Sound & Event Control PRO_`;
           </div>
 
           {/* Navigation Sub-Tabs */}
-          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80">
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
             <button
               onClick={() => setActiveTab('general')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex-shrink-0 ${
                 activeTab === 'general'
                   ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800'

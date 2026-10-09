@@ -87,7 +87,7 @@ export default function ReceiptModal({ isOpen, onClose, booking }) {
           </div>
 
           {/* Client & Event Info */}
-          <div className="grid grid-cols-2 gap-4 text-xs bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
             <div>
               <span className="text-slate-500 font-bold uppercase text-[10px] block">Cliente:</span>
               <p className="font-bold text-white text-sm">{booking.clientName}</p>
