@@ -32,9 +32,30 @@ const InstagramIcon = ({ className = "w-4 h-4" }) => (
 );
 
 export default function App() {
+  // Determinar si la URL es /admin o #admin
+  const isInitialAdmin = () => {
+    if (typeof window === 'undefined') return false;
+    return window.location.pathname.startsWith('/admin') || window.location.hash.includes('admin');
+  };
+
   // Navigation state: 'catalog' o 'admin'
-  const [activeTab, setActiveTab] = useState('catalog');
+  const [activeTab, setActiveTab] = useState(() => isInitialAdmin() ? 'admin' : 'catalog');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  // Navegación limpia con URL History API
+  const handleNavigate = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'admin') {
+      if (window.location.pathname !== '/admin') {
+        window.history.pushState(null, '', '/admin');
+      }
+    } else {
+      if (window.location.pathname !== '/') {
+        window.history.pushState(null, '', '/');
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Business state
   const [equipmentList, setEquipmentList] = useState(getStoredEquipment);
@@ -81,6 +102,31 @@ export default function App() {
   useEffect(() => {
     saveStoredCombos(combosList);
   }, [combosList]);
+
+  // Sincronizar historial del navegador y atajo de teclado para el DJ
+  useEffect(() => {
+    const handlePopState = () => {
+      const isNowAdmin = window.location.pathname.startsWith('/admin') || window.location.hash.includes('admin');
+      setActiveTab(isNowAdmin ? 'admin' : 'catalog');
+    };
+
+    const handleKeyDown = (e) => {
+      // Atajo secreto DJ: Ctrl+Shift+A o Alt+A
+      if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') || (e.altKey && e.key.toLowerCase() === 'a')) {
+        e.preventDefault();
+        const next = activeTab === 'admin' ? 'catalog' : 'admin';
+        handleNavigate(next);
+        showToast(next === 'admin' ? '🔐 Acceso a Panel de Control' : '🌐 Catálogo Público');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTab]);
 
   // Cart operations
   const handleAddToCart = (equipment) => {
@@ -265,10 +311,15 @@ export default function App() {
       {/* Main Navbar */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        onNavigate={handleNavigate}
         cartCount={cartTotalItems}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onLockAdmin={() => {
+          setIsAdminAuthenticated(false);
+          showToast('🔒 Panel bloqueado con éxito');
+        }}
+        settings={settings}
       />
 
       {/* Main Container */}
@@ -387,7 +438,7 @@ export default function App() {
 
             {/* COMBOS SECTION (if 'Todos' or 'Combos y Paquetes' and no search filter) */}
             {(selectedCategory === 'Todos' || selectedCategory === 'Combos y Paquetes') && !catalogSearch && (
-              <section className="space-y-4 pt-2">
+              <section id="combos" className="space-y-4 pt-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-amber-400" />
@@ -414,7 +465,7 @@ export default function App() {
 
             {/* INDIVIDUAL EQUIPMENT GRID */}
             {selectedCategory !== 'Combos y Paquetes' && (
-              <section className="space-y-4 pt-4">
+              <section id="equipos" className="space-y-4 pt-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
                     Equipos Individuales
@@ -457,10 +508,14 @@ export default function App() {
             )}
 
             {/* GALLERY PORTFOLIO SECTION */}
-            <EventGallery gallery={settings.gallery} />
+            <div id="galeria">
+              <EventGallery gallery={settings.gallery} />
+            </div>
 
             {/* FAQ SECTION (Configurable from Admin) */}
-            <FaqSection settings={settings} />
+            <div id="faq">
+              <FaqSection settings={settings} />
+            </div>
 
 
             {/* Floating Mobile Cart Action Bar */}
@@ -485,26 +540,61 @@ export default function App() {
           </div>
         )}
 
-        {/* ADMIN DASHBOARD VIEW */}
+        {/* ADMIN DASHBOARD VIEW (Acceso Privado para el DJ) */}
         {activeTab === 'admin' && (
           !isAdminAuthenticated ? (
             <AdminAuthGuard
               onUnlock={() => setIsAdminAuthenticated(true)}
-              onCancel={() => setActiveTab('catalog')}
+              onCancel={() => handleNavigate('catalog')}
             />
           ) : (
-            <div className="animate-fade-in">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-xs font-bold text-amber-400 bg-amber-500/10 px-3 py-1 rounded-xl border border-amber-500/20">
-                  🔐 Sesión de Administrador Activa
-                </span>
-                <button
-                  onClick={() => setIsAdminAuthenticated(false)}
-                  className="text-xs text-slate-400 hover:text-red-400 font-bold bg-slate-900 border border-slate-800 px-3 py-1 rounded-xl transition-colors"
-                >
-                  Bloquear Panel 🔒
-                </button>
+            <div className="animate-fade-in space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[#0f1422] p-4 sm:p-5 rounded-3xl border border-amber-500/30 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                  <div>
+                    <h2 className="text-sm sm:text-base font-black text-white">
+                      Sesión de Administrador: {settings.businessName}
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Gestionando inventario, reservas y calendario en vivo
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => handleNavigate('catalog')}
+                    className="text-xs font-bold text-slate-300 hover:text-white bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                    title="Ir al sitio público de clientes"
+                  >
+                    <span>🌐</span>
+                    <span>Ver Sitio Público</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 bg-slate-900 border border-amber-500/30 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                    title="Ajustes de Negocio y WhatsApp"
+                  >
+                    <span>⚙️</span>
+                    <span>Ajustes</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsAdminAuthenticated(false);
+                      showToast('🔒 Panel bloqueado con éxito');
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300 font-bold bg-red-950/30 border border-red-500/30 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
+                    title="Bloquear sesión"
+                  >
+                    <span>🔒</span>
+                    <span className="hidden sm:inline">Bloquear</span>
+                  </button>
+                </div>
               </div>
+
               <AdminDashboard
                 bookings={bookings}
                 equipmentList={equipmentList}
@@ -524,20 +614,34 @@ export default function App() {
           )
         )}
 
-
-
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-[#07090e] py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>© {new Date().getFullYear()} {settings.businessName} - Sistema de Alquiler de Sonido & Control DJ.</p>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSettingsOpen(true)} className="hover:text-amber-400 transition-colors">
-              Ajustes de WhatsApp
+      {/* Footer Público Profesional (Limpio para Clientes) */}
+      <footer className="border-t border-slate-900 bg-[#07090e] py-8 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div>
+            <p className="font-bold text-slate-300">
+              © {new Date().getFullYear()} {settings.businessName} • {settings.djName}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Alquiler de Sonido Profesional, Iluminación & Control DJ para Eventos
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 text-[11px]">
+            {settings.cityCoverage && (
+              <span className="text-slate-400">📍 {settings.cityCoverage}</span>
+            )}
+            <span className="text-slate-800">•</span>
+            {/* Acceso discreto para el staff/dueño */}
+            <button 
+              onClick={() => handleNavigate('admin')} 
+              className="text-slate-700 hover:text-slate-400 transition-colors flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-900"
+              title="Acceso exclusivo para el DJ y Staff"
+            >
+              <span>🔒</span>
+              <span>Acceso Staff</span>
             </button>
-            <span>•</span>
-            <span className="text-emerald-500">100% Gratuito & Serverless</span>
           </div>
         </div>
       </footer>

@@ -120,6 +120,17 @@ export default function AdminAuthGuard({ onUnlock, onCancel }) {
           </button>
         </div>
 
+        {/* Return to Public Catalog */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs text-slate-400 hover:text-amber-400 font-semibold transition-colors"
+          >
+            ← Volver a la Tienda Pública
+          </button>
+        </div>
+
       </div>
     </div>
   );
