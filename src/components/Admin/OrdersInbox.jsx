@@ -149,56 +149,74 @@ export default function OrdersInbox({
                 {/* Details Grid (Clickable to open dossier) */}
                 <div 
                   onClick={() => setDetailBooking(booking)}
-                  className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs cursor-pointer hover:bg-slate-900/30 p-2 -mx-2 rounded-xl transition-colors group"
-                  title="Haz clic para ver la ficha completa"
+                  className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs cursor-pointer group"
+                  title="Haz clic para ver la ficha técnica completa"
                 >
-                  {/* Client Info */}
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Cliente:</span>
-                    <p className="font-bold text-white text-sm group-hover:text-amber-400 transition-colors">
-                      {booking.clientName}
-                    </p>
-                    <p className="text-slate-400">{booking.clientPhone}</p>
-                    <p className="text-slate-400 mt-1">📍 {booking.eventLocation || 'Por definir'}</p>
-                  </div>
-
-                  {/* Date and Items */}
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-500 block">Fecha del Evento:</span>
-                    <p className="font-bold text-amber-400 text-sm">{formatDateFriendly(booking.eventDate)}</p>
-                    <div className="mt-1 space-y-0.5">
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Equipos:</span>
-                      {booking.items.map((it, i) => (
-                        <p key={i} className="text-slate-300 truncate">
-                          • {it.quantity}x {it.name}
-                        </p>
-                      ))}
+                  {/* Columna 1: Cliente & Locación */}
+                  <div className="bg-slate-950/60 group-hover:border-slate-700/80 p-3.5 rounded-xl border border-slate-800/60 flex flex-col justify-between min-h-[135px] transition-colors">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Cliente</span>
+                      <p className="font-extrabold text-white text-sm group-hover:text-amber-400 transition-colors mt-0.5 truncate">
+                        {booking.clientName}
+                      </p>
+                      <p className="text-slate-400 font-mono text-[11px] mt-0.5">{booking.clientPhone || 'Sin teléfono'}</p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-900 mt-2">
+                      <p className="text-slate-400 text-[11px] flex items-center gap-1.5 truncate">
+                        <span className="text-red-400 flex-shrink-0">📍</span>
+                        <span className="truncate">{booking.eventLocation || 'Lugar por definir'}</span>
+                      </p>
                     </div>
                   </div>
 
-                  {/* Financial Summary */}
+                  {/* Columna 2: Fecha & Equipos */}
+                  <div className="bg-slate-950/60 group-hover:border-slate-700/80 p-3.5 rounded-xl border border-slate-800/60 flex flex-col justify-between min-h-[135px] transition-colors">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Fecha del Evento</span>
+                        <span className="text-[10px] text-cyan-400 font-bold">{(booking.items || []).length} ítems</span>
+                      </div>
+                      <p className="font-extrabold text-amber-400 text-sm mt-0.5">
+                        {formatDateFriendly(booking.eventDate)}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-900 mt-2">
+                      <div className="max-h-[48px] overflow-y-auto no-scrollbar space-y-0.5">
+                        {(booking.items || []).map((it, i) => (
+                          <p key={i} className="text-slate-300 text-[11px] truncate flex items-center gap-1">
+                            <span className="text-amber-500/70 font-mono font-bold">•</span>
+                            <span className="font-semibold text-white">{it.quantity}x</span>
+                            <span className="truncate">{it.name}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Columna 3: Resumen Financiero */}
                   <div 
                     onClick={(e) => e.stopPropagation()} 
-                    className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between"
+                    className="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[135px]"
                   >
                     <div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Total:</span>
-                        <span className="font-bold text-white">{formatCurrency(booking.totalAmount)}</span>
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span className="text-[10px] uppercase font-bold text-slate-500">Total:</span>
+                        <span className="font-extrabold text-white text-xs">{formatCurrency(booking.totalAmount)}</span>
                       </div>
-                      <div className="flex justify-between text-emerald-400 mt-1">
-                        <span>Abonado:</span>
-                        <span className="font-bold">{formatCurrency(booking.depositAmount || 0)}</span>
+                      <div className="flex justify-between items-center text-emerald-400 mt-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-500">Abonado:</span>
+                        <span className="font-bold text-xs">{formatCurrency(booking.depositAmount || 0)}</span>
                       </div>
-                      <div className="flex justify-between text-amber-400 mt-1 font-bold pt-1 border-t border-slate-800">
-                        <span>Saldo:</span>
-                        <span>{formatCurrency(booking.balanceDue || 0)}</span>
+                      <div className="flex justify-between items-center text-amber-400 mt-1 font-bold pt-1 border-t border-slate-800/80">
+                        <span className="text-[10px] uppercase font-bold">Saldo:</span>
+                        <span className="font-black text-xs">{formatCurrency(booking.balanceDue || 0)}</span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => onOpenPayment(booking)}
-                      className="mt-2.5 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold py-1.5 px-2 rounded-lg border border-amber-500/30 flex items-center justify-center gap-1.5 transition-colors"
+                      className="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold py-1 px-2 rounded-lg border border-amber-500/30 flex items-center justify-center gap-1.5 transition-colors text-xs"
                     >
                       <DollarSign className="w-3.5 h-3.5" />
                       <span>Gestionar Abonos</span>

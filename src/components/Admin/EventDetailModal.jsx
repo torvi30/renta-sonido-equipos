@@ -143,10 +143,10 @@ _Generado desde Sound & Event Control PRO_`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-3xl bg-[#0d121f] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[94vh] my-auto">
+      <div className="relative w-full max-w-4xl bg-[#0d121f] border border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[820px] min-h-[580px] my-auto">
         
         {/* HEADER VIP */}
-        <div className="p-4 sm:p-6 border-b border-slate-800 bg-gradient-to-r from-[#111728] via-[#0f1422] to-[#141b2e]">
+        <div className="p-4 sm:p-6 border-b border-slate-800/80 bg-gradient-to-r from-[#111728] via-[#0f1422] to-[#141b2e] flex-shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3.5 min-w-0">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/10">
@@ -203,36 +203,38 @@ _Generado desde Sound & Event Control PRO_`;
           <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-800/80 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
             <button
               onClick={() => setActiveTab('general')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex-shrink-0 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                 activeTab === 'general'
                   ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800'
+                  : 'text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800'
               }`}
             >
-              📍 Logística & Ruta
+              <span>📍 Logística & Ruta</span>
             </button>
             <button
               onClick={() => setActiveTab('equipment')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                 activeTab === 'equipment'
-                  ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800'
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800'
               }`}
             >
-              🎛️ Rider & Cables
-              <span className="bg-black/30 px-1.5 py-0.2 rounded-md text-[10px]">
+              <span>🎛️ Rider & Cables</span>
+              <span className={`px-1.5 py-0.2 rounded-md text-[10px] font-black ${
+                activeTab === 'equipment' ? 'bg-black/20 text-black' : 'bg-slate-800 text-slate-300'
+              }`}>
                 {(booking.items || []).length}
               </span>
             </button>
             <button
               onClick={() => setActiveTab('finances')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 flex-shrink-0 ${
                 activeTab === 'finances'
-                  ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20'
-                  : 'text-slate-400 hover:text-white bg-slate-900/80 border border-slate-800'
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                  : 'text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-800'
               }`}
             >
-              💰 Cobros & Abonos
+              <span>💰 Cobros & Abonos</span>
               {hasPendingBalance && (
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
               )}
@@ -299,17 +301,17 @@ _Generado desde Sound & Event Control PRO_`;
                 </div>
 
                 {/* Fecha y Ubicación GPS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs pt-1">
                   
                   {/* Fecha */}
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-between min-h-[140px]">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
                         Fecha Programada
                       </span>
                       <p className="font-extrabold text-amber-400 text-base mt-1 flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-amber-400" />
-                        {formatDateFriendly(booking.eventDate)}
+                        <Calendar className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                        <span>{formatDateFriendly(booking.eventDate)}</span>
                       </p>
                       {booking.endDate && booking.endDate !== booking.eventDate && (
                         <p className="text-xs text-cyan-300 font-bold mt-1">
@@ -317,54 +319,58 @@ _Generado desde Sound & Event Control PRO_`;
                         </p>
                       )}
                     </div>
-                    <div className="mt-3 pt-2 border-t border-slate-900 text-[11px] text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-500" />
-                      <span>Revisar horario de montaje con el cliente</span>
+                    <div className="mt-3 pt-2 border-t border-slate-900 text-[11px] text-slate-400 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+                      <span>Coordinar horario de montaje con el cliente</span>
                     </div>
                   </div>
 
                   {/* Locación y Navegación GPS */}
-                  <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 flex flex-col justify-between min-h-[140px]">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-500 block">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">
                         Ubicación del Montaje
                       </span>
-                      <p className="font-bold text-white text-xs sm:text-sm mt-1 flex items-start gap-1.5">
+                      <p className="font-bold text-white text-xs sm:text-sm mt-1 flex items-start gap-1.5 line-clamp-2">
                         <MapPin className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
                         <span>{booking.eventLocation || 'Dirección por definir con el cliente'}</span>
                       </p>
                     </div>
 
-                    {booking.eventLocation && (
-                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-900">
-                        <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 text-center py-1.5 px-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Navigation className="w-3 h-3" />
-                          <span>Google Maps</span>
-                        </a>
-                        <a
-                          href={`https://waze.com/ul?q=${mapQuery}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 text-center py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[11px] font-bold transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Compass className="w-3 h-3" />
-                          <span>Waze</span>
-                        </a>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-900">
+                      {booking.eventLocation ? (
+                        <>
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center py-1.5 px-2 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <Navigation className="w-3.5 h-3.5" />
+                            <span>Google Maps</span>
+                          </a>
+                          <a
+                            href={`https://waze.com/ul?q=${mapQuery}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 text-center py-1.5 px-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-[11px] font-bold transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            <Compass className="w-3.5 h-3.5" />
+                            <span>Waze</span>
+                          </a>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-slate-500 italic py-1">Sin ubicación GPS</span>
+                      )}
+                    </div>
                   </div>
 
                 </div>
 
                 {/* Notas Especiales / Requerimientos de Tarima */}
                 {booking.notes && (
-                  <div className="bg-amber-950/20 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1">
+                  <div className="bg-amber-950/20 border border-amber-500/30 p-4 rounded-2xl text-xs space-y-1.5">
+                    <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5" />
                       Notas & Observaciones del Cliente:
                     </span>
@@ -377,21 +383,21 @@ _Generado desde Sound & Event Control PRO_`;
               </div>
 
               {/* Resumen Express de Finanzas & Equipos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div 
                   onClick={() => setActiveTab('finances')}
-                  className="bg-[#111728] p-4 rounded-2xl border border-slate-800 hover:border-emerald-500/50 cursor-pointer transition-all group"
+                  className="bg-[#111728] hover:bg-[#151c30] p-4 rounded-2xl border border-slate-800 hover:border-amber-500/50 cursor-pointer transition-all flex flex-col justify-between min-h-[130px] group shadow-sm"
                 >
-                  <div className="flex justify-between items-center text-xs text-slate-400 mb-1">
-                    <span className="font-bold flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span className="font-bold flex items-center gap-1.5 text-slate-300">
                       <DollarSign className="w-4 h-4 text-emerald-400" />
                       Estado Financiero
                     </span>
-                    <span className="text-emerald-400 font-extrabold group-hover:underline">
-                      Ver detalles →
+                    <span className="text-amber-400 font-extrabold group-hover:underline text-[11px]">
+                      Ver cobros →
                     </span>
                   </div>
-                  <div className="flex items-baseline justify-between mt-2">
+                  <div className="flex items-baseline justify-between">
                     <div>
                       <span className="text-[10px] text-slate-500 block uppercase font-bold">Total Orden</span>
                       <span className="text-base font-black text-white">{formatCurrency(totalAmount)}</span>
@@ -406,7 +412,7 @@ _Generado desde Sound & Event Control PRO_`;
                     </div>
                   </div>
                   {/* Mini Progress Bar */}
-                  <div className="w-full bg-slate-900 rounded-full h-1.5 mt-3 overflow-hidden border border-slate-800">
+                  <div className="w-full bg-slate-950 rounded-full h-1.5 mt-2.5 overflow-hidden border border-slate-800/80">
                     <div 
                       className={`h-full rounded-full ${paymentPercentage >= 100 ? 'bg-emerald-500' : 'bg-amber-500'}`}
                       style={{ width: `${paymentPercentage}%` }}
@@ -416,26 +422,26 @@ _Generado desde Sound & Event Control PRO_`;
 
                 <div 
                   onClick={() => setActiveTab('equipment')}
-                  className="bg-[#111728] p-4 rounded-2xl border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition-all group"
+                  className="bg-[#111728] hover:bg-[#151c30] p-4 rounded-2xl border border-slate-800 hover:border-cyan-500/50 cursor-pointer transition-all flex flex-col justify-between min-h-[130px] group shadow-sm"
                 >
-                  <div className="flex justify-between items-center text-xs text-slate-400 mb-1">
-                    <span className="font-bold flex items-center gap-1.5">
+                  <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+                    <span className="font-bold flex items-center gap-1.5 text-slate-300">
                       <Layers className="w-4 h-4 text-cyan-400" />
                       Rider Técnico & Equipos
                     </span>
-                    <span className="text-cyan-400 font-extrabold group-hover:underline">
+                    <span className="text-cyan-400 font-extrabold group-hover:underline text-[11px]">
                       Ver equipos →
                     </span>
                   </div>
-                  <div className="mt-2">
+                  <div>
                     <span className="text-[10px] text-slate-500 block uppercase font-bold">Carga de Sonido</span>
                     <span className="text-base font-black text-white">
-                      {(booking.items || []).reduce((sum, it) => sum + (it.quantity || 1), 0)} piezas asignadas
+                      {(booking.items || []).reduce((sum, it) => sum + (it.quantity || 1), 0)} unidades asignadas
                     </span>
-                    <p className="text-[11px] text-slate-400 mt-1 truncate">
-                      {(booking.items || []).map(it => `${it.quantity}x ${it.name}`).join(', ')}
-                    </p>
                   </div>
+                  <p className="text-[11px] text-slate-400 truncate mt-1">
+                    {(booking.items || []).map(it => `${it.quantity}x ${it.name}`).join(', ') || 'Sin equipos asignados'}
+                  </p>
                 </div>
               </div>
 
@@ -581,26 +587,28 @@ _Generado desde Sound & Event Control PRO_`;
                 </div>
 
                 {/* KPI Boxes */}
-                <div className="grid grid-cols-3 gap-2.5 text-center">
-                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold block">Total Orden</span>
-                    <span className="text-sm sm:text-lg font-black text-white block mt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-center">
+                  <div className="bg-slate-950/90 p-4 rounded-2xl border border-slate-800 flex flex-col justify-center items-center min-h-[90px]">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Total Orden</span>
+                    <span className="text-base sm:text-lg font-black text-white block mt-1 tracking-tight">
                       {formatCurrency(totalAmount)}
                     </span>
                   </div>
 
-                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-emerald-500/30">
-                    <span className="text-[10px] text-emerald-400 uppercase font-bold block">Abonado ({paymentPercentage}%)</span>
-                    <span className="text-sm sm:text-lg font-black text-emerald-400 block mt-1">
+                  <div className="bg-slate-950/90 p-4 rounded-2xl border border-emerald-500/30 flex flex-col justify-center items-center min-h-[90px]">
+                    <span className="text-[10px] text-emerald-400 uppercase font-bold tracking-wider block">Abonado ({paymentPercentage}%)</span>
+                    <span className="text-base sm:text-lg font-black text-emerald-400 block mt-1 tracking-tight">
                       {formatCurrency(depositAmount)}
                     </span>
                   </div>
 
-                  <div className={`p-3.5 rounded-2xl border ${hasPendingBalance ? 'bg-amber-950/30 border-amber-500/40' : 'bg-slate-950 border-slate-800'}`}>
-                    <span className={`text-[10px] uppercase font-bold block ${hasPendingBalance ? 'text-amber-400' : 'text-slate-400'}`}>
+                  <div className={`p-4 rounded-2xl border flex flex-col justify-center items-center min-h-[90px] ${
+                    hasPendingBalance ? 'bg-amber-950/30 border-amber-500/40' : 'bg-slate-950/90 border-slate-800'
+                  }`}>
+                    <span className={`text-[10px] uppercase font-bold tracking-wider block ${hasPendingBalance ? 'text-amber-400' : 'text-slate-400'}`}>
                       Saldo por Cobrar
                     </span>
-                    <span className={`text-sm sm:text-lg font-black block mt-1 ${hasPendingBalance ? 'text-amber-400' : 'text-slate-300'}`}>
+                    <span className={`text-base sm:text-lg font-black block mt-1 tracking-tight ${hasPendingBalance ? 'text-amber-400' : 'text-slate-300'}`}>
                       {formatCurrency(balanceDue)}
                     </span>
                   </div>

@@ -549,52 +549,6 @@ export default function App() {
             />
           ) : (
             <div className="animate-fade-in space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-[#0f1422] p-4 sm:p-5 rounded-3xl border border-amber-500/30 shadow-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                  <div>
-                    <h2 className="text-sm sm:text-base font-black text-white">
-                      Sesión de Administrador: {settings.businessName}
-                    </h2>
-                    <p className="text-xs text-slate-400">
-                      Gestionando inventario, reservas y calendario en vivo
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                  <button
-                    onClick={() => handleNavigate('catalog')}
-                    className="text-xs font-bold text-slate-300 hover:text-white bg-slate-900 border border-slate-700 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
-                    title="Ir al sitio público de clientes"
-                  >
-                    <span>🌐</span>
-                    <span>Ver Sitio Público</span>
-                  </button>
-
-                  <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="text-xs font-bold text-amber-400 hover:text-amber-300 bg-slate-900 border border-amber-500/30 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
-                    title="Ajustes de Negocio y WhatsApp"
-                  >
-                    <span>⚙️</span>
-                    <span>Ajustes</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsAdminAuthenticated(false);
-                      showToast('🔒 Panel bloqueado con éxito');
-                    }}
-                    className="text-xs text-red-400 hover:text-red-300 font-bold bg-red-950/30 border border-red-500/30 px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5"
-                    title="Bloquear sesión"
-                  >
-                    <span>🔒</span>
-                    <span className="hidden sm:inline">Bloquear</span>
-                  </button>
-                </div>
-              </div>
-
               <AdminDashboard
                 bookings={bookings}
                 equipmentList={equipmentList}

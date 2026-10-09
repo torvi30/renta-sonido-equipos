@@ -31,11 +31,15 @@ export default function Navbar({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="font-black text-sm sm:text-base text-white tracking-tight">
-                    SOUND & EVENT PRO
+                  <h1 className="font-black text-sm sm:text-base text-white tracking-tight truncate max-w-[200px] sm:max-w-none">
+                    {settings?.businessName || 'SOUND & EVENT PRO'}
                   </h1>
-                  <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black rounded-md">
+                  <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-amber-500 text-black rounded-md flex-shrink-0">
                     ADMIN
+                  </span>
+                  <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    En vivo
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 hidden sm:block">
