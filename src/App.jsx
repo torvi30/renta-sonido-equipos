@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import DateBanner from './components/Catalog/DateBanner';
 import EquipmentCard from './components/Catalog/EquipmentCard';
 import ComboCard from './components/Catalog/ComboCard';
 import CartModal from './components/Catalog/CartModal';
-import AdminDashboard from './components/Admin/AdminDashboard';
-import PaymentModal from './components/Admin/PaymentModal';
-import ChecklistModal from './components/Admin/ChecklistModal';
-import ReceiptModal from './components/Admin/ReceiptModal';
-import SettingsModal from './components/Admin/SettingsModal';
-import AdminAuthGuard from './components/Admin/AdminAuthGuard';
 import FaqSection from './components/Catalog/FaqSection';
 import EventGallery from './components/Catalog/EventGallery';
 import Toast from './components/Toast';
+
+// Code-splitting: Carga diferida de componentes de administrador para que la tienda pública cargue ultra-rápida
+const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard'));
+const AdminAuthGuard = lazy(() => import('./components/Admin/AdminAuthGuard'));
+const PaymentModal = lazy(() => import('./components/Admin/PaymentModal'));
+const ChecklistModal = lazy(() => import('./components/Admin/ChecklistModal'));
+const ReceiptModal = lazy(() => import('./components/Admin/ReceiptModal'));
+const SettingsModal = lazy(() => import('./components/Admin/SettingsModal'));
 
 import { 
   getStoredEquipment, saveStoredEquipment,
@@ -282,28 +284,45 @@ export default function App() {
 
   const selectedEndDate = calculateEndDate(selectedDate, rentalDays);
 
-  // Filtered equipment list for catalog with search and sorting
-  const filteredEquipment = equipmentList.filter(eq => {
-    if (selectedCategory !== 'Todos' && selectedCategory !== 'Combos y Paquetes' && eq.category !== selectedCategory) {
-      return false;
-    }
-    if (catalogSearch.trim()) {
-      const q = catalogSearch.toLowerCase();
-      const matchName = eq.name.toLowerCase().includes(q);
-      const matchCat = eq.category.toLowerCase().includes(q);
-      const matchDesc = eq.description && eq.description.toLowerCase().includes(q);
-      if (!matchName && !matchCat && !matchDesc) return false;
-    }
-    return true;
-  }).sort((a, b) => {
-    if (sortBy === 'price-low') return a.pricePerDay - b.pricePerDay;
-    if (sortBy === 'price-high') return b.pricePerDay - a.pricePerDay;
-    if (sortBy === 'popular') return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
-    return 0;
-  });
+  // Cálculo ultra-optimizado de disponibilidad (precalculado una sola vez por cambio de fecha)
+  const availabilityMap = useMemo(() => {
+    const map = {};
+    equipmentList.forEach(eq => {
+      map[eq.id] = checkEquipmentAvailability(eq.id, selectedDate, bookings, null, selectedEndDate);
+    });
+    return map;
+  }, [equipmentList, selectedDate, bookings, selectedEndDate]);
 
+  // Mapa de acceso instantáneo O(1) para el carrito
+  const cartMap = useMemo(() => {
+    const map = {};
+    cart.forEach(it => { map[it.id] = it; });
+    return map;
+  }, [cart]);
 
-  const cartTotalItems = cart.reduce((sum, it) => sum + it.quantity, 0);
+  // Lista de equipos filtrada y ordenada con useMemo (cero re-cálculos innecesarios)
+  const filteredEquipment = useMemo(() => {
+    return equipmentList.filter(eq => {
+      if (selectedCategory !== 'Todos' && selectedCategory !== 'Combos y Paquetes' && eq.category !== selectedCategory) {
+        return false;
+      }
+      if (catalogSearch.trim()) {
+        const q = catalogSearch.toLowerCase();
+        const matchName = eq.name.toLowerCase().includes(q);
+        const matchCat = eq.category.toLowerCase().includes(q);
+        const matchDesc = eq.description && eq.description.toLowerCase().includes(q);
+        if (!matchName && !matchCat && !matchDesc) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      if (sortBy === 'price-low') return a.pricePerDay - b.pricePerDay;
+      if (sortBy === 'price-high') return b.pricePerDay - a.pricePerDay;
+      if (sortBy === 'popular') return (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
+      return 0;
+    });
+  }, [equipmentList, selectedCategory, catalogSearch, sortBy]);
+
+  const cartTotalItems = useMemo(() => cart.reduce((sum, it) => sum + it.quantity, 0), [cart]);
 
   return (
     <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans">
@@ -487,21 +506,16 @@ export default function App() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEquipment.map(eq => {
-                      const availability = checkEquipmentAvailability(eq.id, selectedDate, bookings, null, selectedEndDate);
-                      const cartItem = cart.find(c => c.id === eq.id);
-
-                      return (
-                        <EquipmentCard
-                          key={eq.id}
-                          equipment={eq}
-                          availability={availability}
-                          cartItem={cartItem}
-                          onAddToCart={handleAddToCart}
-                          onUpdateCartQuantity={handleUpdateCartQuantity}
-                        />
-                      );
-                    })}
+                    {filteredEquipment.map(eq => (
+                      <EquipmentCard
+                        key={eq.id}
+                        equipment={eq}
+                        availability={availabilityMap[eq.id]}
+                        cartItem={cartMap[eq.id]}
+                        onAddToCart={handleAddToCart}
+                        onUpdateCartQuantity={handleUpdateCartQuantity}
+                      />
+                    ))}
                   </div>
                 )}
               </section>
@@ -540,32 +554,39 @@ export default function App() {
           </div>
         )}
 
-        {/* ADMIN DASHBOARD VIEW (Acceso Privado para el DJ) */}
+        {/* ADMIN DASHBOARD VIEW (Acceso Privado para el DJ - Carga diferida) */}
         {activeTab === 'admin' && (
-          !isAdminAuthenticated ? (
-            <AdminAuthGuard
-              onUnlock={() => setIsAdminAuthenticated(true)}
-              onCancel={() => handleNavigate('catalog')}
-            />
-          ) : (
-            <div className="animate-fade-in space-y-6">
-              <AdminDashboard
-                bookings={bookings}
-                equipmentList={equipmentList}
-                settings={settings}
-                onSaveSettings={handleSaveSettings}
-                combosList={combosList}
-                onSaveCombo={handleSaveCombo}
-                onDeleteCombo={handleDeleteCombo}
-                onUpdateBookingStatus={handleUpdateBookingStatus}
-                onOpenPayment={(b) => setPaymentBooking(b)}
-                onOpenChecklist={(b) => setChecklistBooking(b)}
-                onOpenReceipt={(b) => setReceiptBooking(b)}
-                onSaveEquipment={handleSaveEquipment}
-                onDeleteEquipment={handleDeleteEquipment}
-              />
+          <Suspense fallback={
+            <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-slate-400">
+              <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-bold text-amber-400">Iniciando Sound & Event Control...</p>
             </div>
-          )
+          }>
+            {!isAdminAuthenticated ? (
+              <AdminAuthGuard
+                onUnlock={() => setIsAdminAuthenticated(true)}
+                onCancel={() => handleNavigate('catalog')}
+              />
+            ) : (
+              <div className="animate-fade-in space-y-6">
+                <AdminDashboard
+                  bookings={bookings}
+                  equipmentList={equipmentList}
+                  settings={settings}
+                  onSaveSettings={handleSaveSettings}
+                  combosList={combosList}
+                  onSaveCombo={handleSaveCombo}
+                  onDeleteCombo={handleDeleteCombo}
+                  onUpdateBookingStatus={handleUpdateBookingStatus}
+                  onOpenPayment={(b) => setPaymentBooking(b)}
+                  onOpenChecklist={(b) => setChecklistBooking(b)}
+                  onOpenReceipt={(b) => setReceiptBooking(b)}
+                  onSaveEquipment={handleSaveEquipment}
+                  onDeleteEquipment={handleDeleteEquipment}
+                />
+              </div>
+            )}
+          </Suspense>
         )}
 
       </main>
@@ -613,32 +634,48 @@ export default function App() {
         onCreateBooking={handleCreateBooking}
       />
 
-      <PaymentModal
-        isOpen={Boolean(paymentBooking)}
-        onClose={() => setPaymentBooking(null)}
-        booking={paymentBooking}
-        onSavePayment={handleSavePayment}
-      />
+      {Boolean(paymentBooking) && (
+        <Suspense fallback={null}>
+          <PaymentModal
+            isOpen={Boolean(paymentBooking)}
+            onClose={() => setPaymentBooking(null)}
+            booking={paymentBooking}
+            onSavePayment={handleSavePayment}
+          />
+        </Suspense>
+      )}
 
-      <ChecklistModal
-        isOpen={Boolean(checklistBooking)}
-        onClose={() => setChecklistBooking(null)}
-        booking={checklistBooking}
-        equipmentList={equipmentList}
-        onSaveChecklist={handleSaveChecklist}
-      />
+      {Boolean(checklistBooking) && (
+        <Suspense fallback={null}>
+          <ChecklistModal
+            isOpen={Boolean(checklistBooking)}
+            onClose={() => setChecklistBooking(null)}
+            booking={checklistBooking}
+            equipmentList={equipmentList}
+            onSaveChecklist={handleSaveChecklist}
+          />
+        </Suspense>
+      )}
 
-      <ReceiptModal
-        isOpen={Boolean(receiptBooking)}
-        onClose={() => setReceiptBooking(null)}
-        booking={receiptBooking}
-      />
+      {Boolean(receiptBooking) && (
+        <Suspense fallback={null}>
+          <ReceiptModal
+            isOpen={Boolean(receiptBooking)}
+            onClose={() => setReceiptBooking(null)}
+            booking={receiptBooking}
+          />
+        </Suspense>
+      )}
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSettingsSaved={(newSettings) => setSettings(newSettings)}
-      />
+      {isSettingsOpen && (
+        <Suspense fallback={null}>
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            onSettingsSaved={(newSettings) => setSettings(newSettings)}
+          />
+        </Suspense>
+      )}
 
       {/* TOAST NOTIFICATION */}
       <Toast toast={toast} onClose={() => setToast(null)} />
