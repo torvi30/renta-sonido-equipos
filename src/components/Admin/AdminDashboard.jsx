@@ -7,8 +7,10 @@ import OrdersInbox from './OrdersInbox';
 import CalendarView from './CalendarView';
 import InventoryManager from './InventoryManager';
 import LandingManager from './LandingManager';
+import FinancialReports from './FinancialReports';
 import { formatCurrency } from '../../services/storageService';
-import { Layout } from 'lucide-react';
+import { Layout, BarChart3 } from 'lucide-react';
+
 
 export default function AdminDashboard({
   bookings,
@@ -182,6 +184,18 @@ export default function AdminDashboard({
           <Layout className="w-4 h-4" />
           <span>🎨 Tu Página Web</span>
         </button>
+
+        <button
+          onClick={() => setAdminTab('reports')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+            adminTab === 'reports'
+              ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white bg-slate-900 border border-slate-800'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span>📊 Reportes & Finanzas</span>
+        </button>
       </div>
 
       {/* Tab Panels */}
@@ -219,6 +233,14 @@ export default function AdminDashboard({
           onDeleteCombo={onDeleteCombo}
         />
       )}
+
+      {adminTab === 'reports' && (
+        <FinancialReports
+          bookings={bookings}
+          equipmentList={equipmentList}
+        />
+      )}
+
 
 
     </div>

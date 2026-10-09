@@ -4,6 +4,7 @@ import {
   XCircle, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, ShieldCheck 
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
+import WhatsAppTemplatesModal from './WhatsAppTemplatesModal';
 
 export default function OrdersInbox({
   bookings,
@@ -14,6 +15,8 @@ export default function OrdersInbox({
 }) {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeWhatsAppBooking, setActiveWhatsAppBooking] = useState(null);
+
 
   const statuses = ['Todos', 'Pendiente', 'Aprobado', 'En Evento', 'Finalizado', 'Cancelado'];
 
@@ -118,9 +121,9 @@ export default function OrdersInbox({
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleOpenWhatsAppChat(booking.clientPhone, booking.clientName, booking.id)}
+                      onClick={() => setActiveWhatsAppBooking(booking)}
                       className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
-                      title="Chatear con el cliente"
+                      title="Enviar mensaje o recordatorio por WhatsApp"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>WhatsApp</span>
@@ -134,6 +137,7 @@ export default function OrdersInbox({
                       <span>Recibo</span>
                     </button>
                   </div>
+
                 </div>
 
                 {/* Details Grid */}
@@ -253,6 +257,14 @@ export default function OrdersInbox({
         )}
       </div>
 
+      {/* WhatsApp Smart Templates Modal */}
+      <WhatsAppTemplatesModal
+        isOpen={Boolean(activeWhatsAppBooking)}
+        onClose={() => setActiveWhatsAppBooking(null)}
+        booking={activeWhatsAppBooking}
+      />
+
     </div>
   );
 }
+
