@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { 
   Search, Filter, CheckCircle2, Clock, Truck, Check, 
-  XCircle, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, ShieldCheck 
+  XCircle, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, 
+  ShieldCheck, Eye, Sparkles 
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 import WhatsAppTemplatesModal from './WhatsAppTemplatesModal';
+import EventDetailModal from './EventDetailModal';
 
 export default function OrdersInbox({
-  bookings,
+  bookings = [],
+  equipmentList = [],
   onUpdateStatus,
   onOpenPayment,
   onOpenChecklist,
@@ -16,7 +19,7 @@ export default function OrdersInbox({
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeWhatsAppBooking, setActiveWhatsAppBooking] = useState(null);
-
+  const [detailBooking, setDetailBooking] = useState(null);
 
   const statuses = ['Todos', 'Pendiente', 'Aprobado', 'En Evento', 'Finalizado', 'Cancelado'];
 
@@ -44,12 +47,6 @@ export default function OrdersInbox({
       default:
         return null;
     }
-  };
-
-  const handleOpenWhatsAppChat = (phone, name, orderId) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    const text = encodeURIComponent(`Hola ${name}, te contacto respecto a tu orden #${orderId} de alquiler de sonido...`);
-    window.open(`https://wa.me/${cleanPhone}?text=${text}`, '_blank');
   };
 
   return (
@@ -106,7 +103,7 @@ export default function OrdersInbox({
               >
                 {/* Header Card */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-800/80">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2.5">
                     <span className="font-extrabold text-white text-base">
                       #{booking.id}
                     </span>
@@ -121,12 +118,21 @@ export default function OrdersInbox({
 
                   <div className="flex items-center gap-2">
                     <button
+                      onClick={() => setDetailBooking(booking)}
+                      className="flex items-center gap-1.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
+                      title="Ver expediente técnico y logístico completo"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Expediente PRO</span>
+                    </button>
+
+                    <button
                       onClick={() => setActiveWhatsAppBooking(booking)}
                       className="flex items-center gap-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
                       title="Enviar mensaje o recordatorio por WhatsApp"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
-                      <span>WhatsApp</span>
+                      <span className="hidden sm:inline">WhatsApp</span>
                     </button>
 
                     <button
@@ -134,18 +140,24 @@ export default function OrdersInbox({
                       className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Recibo</span>
+                      <span className="hidden sm:inline">Recibo</span>
                     </button>
                   </div>
 
                 </div>
 
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                {/* Details Grid (Clickable to open dossier) */}
+                <div 
+                  onClick={() => setDetailBooking(booking)}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs cursor-pointer hover:bg-slate-900/30 p-2 -mx-2 rounded-xl transition-colors group"
+                  title="Haz clic para ver la ficha completa"
+                >
                   {/* Client Info */}
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-500 block">Cliente:</span>
-                    <p className="font-bold text-white text-sm">{booking.clientName}</p>
+                    <p className="font-bold text-white text-sm group-hover:text-amber-400 transition-colors">
+                      {booking.clientName}
+                    </p>
                     <p className="text-slate-400">{booking.clientPhone}</p>
                     <p className="text-slate-400 mt-1">📍 {booking.eventLocation || 'Por definir'}</p>
                   </div>
@@ -165,7 +177,10 @@ export default function OrdersInbox({
                   </div>
 
                   {/* Financial Summary */}
-                  <div className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+                  <div 
+                    onClick={(e) => e.stopPropagation()} 
+                    className="bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 flex flex-col justify-between"
+                  >
                     <div>
                       <div className="flex justify-between text-slate-400">
                         <span>Total:</span>
@@ -264,7 +279,33 @@ export default function OrdersInbox({
         booking={activeWhatsAppBooking}
       />
 
+      {/* Event Detail PRO Modal */}
+      <EventDetailModal
+        isOpen={Boolean(detailBooking)}
+        onClose={() => setDetailBooking(null)}
+        booking={detailBooking}
+        equipmentList={equipmentList}
+        onOpenPayment={(b) => {
+          setDetailBooking(null);
+          if (onOpenPayment) onOpenPayment(b);
+        }}
+        onOpenChecklist={(b) => {
+          setDetailBooking(null);
+          if (onOpenChecklist) onOpenChecklist(b);
+        }}
+        onOpenReceipt={(b) => {
+          setDetailBooking(null);
+          if (onOpenReceipt) onOpenReceipt(b);
+        }}
+        onOpenWhatsApp={(b) => {
+          setActiveWhatsAppBooking(b);
+        }}
+        onUpdateStatus={(id, st) => {
+          if (onUpdateStatus) onUpdateStatus(id, st);
+          setDetailBooking(prev => prev && prev.id === id ? { ...prev, status: st } : prev);
+        }}
+      />
+
     </div>
   );
 }
-

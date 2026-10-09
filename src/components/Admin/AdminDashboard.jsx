@@ -202,6 +202,7 @@ export default function AdminDashboard({
       {adminTab === 'orders' && (
         <OrdersInbox
           bookings={bookings}
+          equipmentList={equipmentList}
           onUpdateStatus={onUpdateBookingStatus}
           onOpenPayment={onOpenPayment}
           onOpenChecklist={onOpenChecklist}
@@ -213,6 +214,10 @@ export default function AdminDashboard({
         <CalendarView
           bookings={bookings}
           equipmentList={equipmentList}
+          onOpenPayment={onOpenPayment}
+          onOpenChecklist={onOpenChecklist}
+          onOpenReceipt={onOpenReceipt}
+          onUpdateStatus={onUpdateBookingStatus}
         />
       )}
 
