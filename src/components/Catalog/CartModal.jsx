@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, MessageSquare, Send, Calendar, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, generateWhatsAppLink } from '../../services/storageService';
+import { showAlert } from '../../services/alertService';
 
 export default function CartModal({
   isOpen,
@@ -37,11 +38,19 @@ export default function CartModal({
   const handleSendWhatsApp = (e) => {
     e.preventDefault();
     if (!clientName.trim()) {
-      alert('Por favor indica tu nombre o el de la empresa.');
+      showAlert({
+        title: 'Nombre requerido',
+        text: 'Por favor indica tu nombre o el de tu empresa para la cotización.',
+        icon: 'warning'
+      });
       return;
     }
     if (!clientPhone.trim()) {
-      alert('Por favor indica tu número de WhatsApp para contacto.');
+      showAlert({
+        title: 'WhatsApp requerido',
+        text: 'Por favor indica tu número de celular o WhatsApp de contacto.',
+        icon: 'warning'
+      });
       return;
     }
 

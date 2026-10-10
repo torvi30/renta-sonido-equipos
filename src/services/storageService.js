@@ -1,11 +1,13 @@
-import { INITIAL_EQUIPMENT, INITIAL_COMBOS, INITIAL_BOOKINGS } from '../data/initialData';
+import { INITIAL_EQUIPMENT, INITIAL_COMBOS, INITIAL_BOOKINGS, INITIAL_REPAIRS, INITIAL_PAYROLL } from '../data/initialData';
 import { db, isFirebaseConfigured } from '../firebase/config';
 
 const STORAGE_KEYS = {
   EQUIPMENT: 'sec_equipment_data',
   COMBOS: 'sec_combos_data',
   BOOKINGS: 'sec_bookings_data',
-  SETTINGS: 'sec_admin_settings'
+  SETTINGS: 'sec_admin_settings',
+  REPAIRS: 'sec_repairs_data',
+  PAYROLL: 'sec_payroll_data'
 };
 
 const DEFAULT_SETTINGS = {
@@ -16,7 +18,14 @@ const DEFAULT_SETTINGS = {
   currency: "COP",
   depositPercentage: 50,
   termsAndConditions: "El cliente se compromete a devolver los equipos en el mismo estado físico y funcional. Daños por líquidos, golpes o sobrevoltaje corren por cuenta del arrendatario.",
-  adminPin: "1234",
+  adminPin: "1234",       // PIN Super Admin (Dueño - Control Total)
+  managerPin: "2020",     // PIN Admin (Encargado - Operaciones sin finanzas globales)
+  staffPin: "3030",       // PIN Staff (Técnicos - Solo rutas, cables y bodega)
+  workers: [
+    { id: "w-1", name: "Dueño / Propietario", role: "superadmin", pin: "1234", phone: "" },
+    { id: "w-2", name: "Encargado de Operaciones", role: "admin", pin: "2020", phone: "" },
+    { id: "w-3", name: "Técnico de Tarima & Bodega", role: "staff", pin: "3030", phone: "" }
+  ],
 
   // Personalización de Landing Page
   heroBadge: "Audio Pro & Cabinas DJ",
@@ -124,6 +133,32 @@ export const saveStoredSettings = (settings) => {
   localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
 };
 
+export const getStoredRepairs = () => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.REPAIRS);
+    return data ? JSON.parse(data) : INITIAL_REPAIRS;
+  } catch (e) {
+    return INITIAL_REPAIRS;
+  }
+};
+
+export const saveStoredRepairs = (repairs) => {
+  localStorage.setItem(STORAGE_KEYS.REPAIRS, JSON.stringify(repairs));
+};
+
+export const getStoredPayroll = () => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.PAYROLL);
+    return data ? JSON.parse(data) : INITIAL_PAYROLL;
+  } catch (e) {
+    return INITIAL_PAYROLL;
+  }
+};
+
+export const saveStoredPayroll = (payroll) => {
+  localStorage.setItem(STORAGE_KEYS.PAYROLL, JSON.stringify(payroll));
+};
+
 // Formato de moneda profesional
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('es-CO', {
@@ -192,13 +227,22 @@ export const checkEquipmentAvailability = (
     }
   });
 
-  const availableStock = Math.max(0, item.totalStock - reservedCount);
+  const activeRepairs = getStoredRepairs();
+  let damagedCount = 0;
+  activeRepairs.forEach(rep => {
+    if (rep.equipmentId === equipmentId && (rep.status === 'Pendiente' || rep.status === 'En Taller')) {
+      damagedCount += Number(rep.quantity || 1);
+    }
+  });
+
+  const availableStock = Math.max(0, item.totalStock - reservedCount - damagedCount);
 
   return {
     equipmentId,
     equipmentName: item.name,
     totalStock: item.totalStock,
     reservedCount,
+    damagedCount,
     availableStock,
     isAvailable: availableStock > 0
   };
@@ -249,5 +293,70 @@ export const generateWhatsAppLink = ({
 
   const encoded = encodeURIComponent(message);
   return `https://wa.me/${targetNumber}?text=${encoded}`;
+};
+
+// GENERADOR DE MENSAJE WHATSAPP PARA COBRO DE GARANTÍA O REPORTE DE DAÑO
+export const generateDamageReportWhatsAppLink = ({ repair, businessName, djPhone }) => {
+  const clientPhone = (repair.clientPhone || '').replace(/\D/g, '');
+  let msg = `⚠️ *INFORME TÉCNICO DE NOVEDAD & GARANTÍA - ${businessName || 'SOUND CONTROL'}*\n\n`;
+  msg += `Hola ${repair.clientName || 'estimado cliente'}, te informamos que en la revisión técnica de retorno de tu evento *#${repair.bookingId || 'N/A'}*, se identificó una novedad en los equipos:\n\n`;
+  msg += `🔧 *Equipo Afectado:* ${repair.equipmentName}\n`;
+  msg += `📌 *Tipo de Falla:* ${repair.issueType || 'Daño técnico'}\n`;
+  msg += `📝 *Diagnóstico Técnico:* ${repair.description || 'En revisión en taller'}\n`;
+  
+  if (repair.warrantyAmount > 0) {
+    msg += `\n💰 *Costo de Repuesto / Reparación:* ${formatCurrency(repair.warrantyAmount)}\n`;
+  }
+  
+  msg += `\nDe acuerdo con las condiciones de alquiler y contrato de entrega, te compartimos este reporte para proceder con la garantía o reposición correspondiente.\n`;
+  msg += `Quedamos atentos a tu mensaje para coordinar. ¡Muchas gracias!`;
+  
+  return `https://wa.me/${clientPhone}?text=${encodeURIComponent(msg)}`;
+};
+
+// COMPRESOR Y PROCESADOR DE IMÁGENES (Celular / Cámara / PC)
+// Convierte fotos pesadas de celulares en JPEG nítido de ~90KB para almacenamiento local fluido
+export const processImageFile = (file, maxDim = 900, quality = 0.82) => {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    if (!file.type.startsWith('image/')) {
+      return reject(new Error('El archivo seleccionado no es una imagen válida.'));
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen seleccionada.'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo de la imagen.'));
+    reader.readAsDataURL(file);
+  });
 };
 

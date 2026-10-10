@@ -4,6 +4,7 @@ import {
   Sparkles, Star, Copy, ExternalLink, HelpCircle 
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, getStoredSettings } from '../../services/storageService';
+import { showSuccess } from '../../services/alertService';
 
 export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
   if (!isOpen || !booking) return null;
@@ -84,7 +85,7 @@ export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
 
   const handleCopyText = () => {
     navigator.clipboard.writeText(customText);
-    alert('✓ Mensaje copiado al portapapeles');
+    showSuccess('¡Copiado!', 'Mensaje copiado al portapapeles listo para pegar en WhatsApp.');
   };
 
   return (

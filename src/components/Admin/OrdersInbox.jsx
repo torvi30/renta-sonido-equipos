@@ -1,30 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, Filter, CheckCircle2, Clock, Truck, Check, 
   XCircle, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, 
-  ShieldCheck, Eye, Sparkles 
+  ShieldCheck, Eye, Sparkles, Wrench, X
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
+import { showConfirm } from '../../services/alertService';
 import WhatsAppTemplatesModal from './WhatsAppTemplatesModal';
 import EventDetailModal from './EventDetailModal';
 
 export default function OrdersInbox({
   bookings = [],
   equipmentList = [],
+  currentRole = 'superadmin',
   onUpdateStatus,
   onOpenPayment,
   onOpenChecklist,
-  onOpenReceipt
+  onOpenReceipt,
+  onSaveRepair,
+  initialFilterStatus = 'Todos'
 }) {
-  const [filterStatus, setFilterStatus] = useState('Todos');
+  const [filterStatus, setFilterStatus] = useState(initialFilterStatus);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    if (initialFilterStatus) {
+      setFilterStatus(initialFilterStatus);
+    }
+  }, [initialFilterStatus]);
   const [activeWhatsAppBooking, setActiveWhatsAppBooking] = useState(null);
   const [detailBooking, setDetailBooking] = useState(null);
+  
+  // Estado para reporte de avería desde un evento
+  const [damageModalBooking, setDamageModalBooking] = useState(null);
+  const [reportEqId, setReportEqId] = useState('');
+  const [reportQty, setReportQty] = useState(1);
+  const [reportType, setReportType] = useState('Sonido / Driver');
+  const [reportSeverity, setReportSeverity] = useState('Alta');
+  const [reportDesc, setReportDesc] = useState('');
+  const [reportChargeWarranty, setReportChargeWarranty] = useState(true);
+  const [reportWarrantyAmount, setReportWarrantyAmount] = useState(0);
 
-  const statuses = ['Todos', 'Pendiente', 'Aprobado', 'En Evento', 'Finalizado', 'Cancelado'];
+  const statuses = ['Todos', 'Por Cobrar', 'Pendiente', 'Aprobado', 'En Evento', 'Finalizado', 'Cancelado'];
 
   const filteredBookings = bookings.filter(b => {
-    const matchesStatus = filterStatus === 'Todos' || b.status === filterStatus;
+    let matchesStatus = false;
+    if (filterStatus === 'Todos') {
+      matchesStatus = true;
+    } else if (filterStatus === 'Por Cobrar') {
+      matchesStatus = b.status !== 'Cancelado' && (b.balanceDue || 0) > 0;
+    } else {
+      matchesStatus = b.status === filterStatus;
+    }
+
     const matchesSearch = 
       b.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       b.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,20 +96,45 @@ export default function OrdersInbox({
         </div>
 
         {/* Status Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {statuses.map(st => (
-            <button
-              key={st}
-              onClick={() => setFilterStatus(st)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                filterStatus === st
-                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                  : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-              }`}
-            >
-              {st}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {statuses.map(st => {
+            const isPorCobrar = st === 'Por Cobrar';
+            const countPorCobrar = bookings.filter(b => b.status !== 'Cancelado' && (b.balanceDue || 0) > 0).length;
+            const countPendientes = bookings.filter(b => b.status === 'Pendiente').length;
+            const isSelected = filterStatus === st;
+
+            return (
+              <button
+                key={st}
+                onClick={() => setFilterStatus(st)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  isSelected
+                    ? isPorCobrar
+                      ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                      : 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                    : isPorCobrar
+                      ? 'bg-amber-500/10 text-amber-400 hover:text-amber-300 border border-amber-500/30'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                }`}
+              >
+                <span>{isPorCobrar ? '💰 Por Cobrar' : st}</span>
+                {isPorCobrar && countPorCobrar > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    isSelected ? 'bg-black text-amber-400' : 'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {countPorCobrar}
+                  </span>
+                )}
+                {st === 'Pendiente' && countPendientes > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                    isSelected ? 'bg-black text-amber-400' : 'bg-red-500 text-white'
+                  }`}>
+                    {countPendientes}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
       </div>
@@ -108,10 +161,15 @@ export default function OrdersInbox({
                       #{booking.id}
                     </span>
                     {getStatusBadge(booking.status)}
-                    {hasPendingBalance && (
+                    {hasPendingBalance && currentRole !== 'staff' && (
                       <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
                         <AlertTriangle className="w-3 h-3" />
                         Debe saldo: {formatCurrency(booking.balanceDue)}
+                      </span>
+                    )}
+                    {currentRole === 'staff' && (
+                      <span className="flex items-center gap-1 text-[11px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                        📦 {(booking.items || []).length} Equipos Solicitados
                       </span>
                     )}
                   </div>
@@ -135,13 +193,15 @@ export default function OrdersInbox({
                       <span className="hidden sm:inline">WhatsApp</span>
                     </button>
 
-                    <button
-                      onClick={() => onOpenReceipt(booking)}
-                      className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="hidden sm:inline">Recibo</span>
-                    </button>
+                    {currentRole !== 'staff' && (
+                      <button
+                        onClick={() => onOpenReceipt(booking)}
+                        className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="hidden sm:inline">Recibo</span>
+                      </button>
+                    )}
                   </div>
 
                 </div>
@@ -194,34 +254,78 @@ export default function OrdersInbox({
                     </div>
                   </div>
 
-                  {/* Columna 3: Resumen Financiero */}
-                  <div 
-                    onClick={(e) => e.stopPropagation()} 
-                    className="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[135px]"
-                  >
-                    <div>
-                      <div className="flex justify-between items-center text-slate-400">
-                        <span className="text-[10px] uppercase font-bold text-slate-500">Total:</span>
-                        <span className="font-extrabold text-white text-xs">{formatCurrency(booking.totalAmount)}</span>
+                  {/* Columna 3: Resumen Financiero (Admin/SuperAdmin) o Logística & Salida (Staff) */}
+                  {currentRole === 'staff' ? (
+                    <div 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[135px]"
+                    >
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider block">Estado de Cables & Salida</span>
+                        <div className="mt-1">
+                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md ${
+                            booking.checklistVerified 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' 
+                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                          }`}>
+                            {booking.checklistVerified ? '✓ Cables Verificados' : '⚠️ Pendiente Alistar'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1.5 truncate">
+                          {booking.eventLocation ? `📍 ${booking.eventLocation}` : '📍 Ubicación por confirmar'}
+                        </p>
                       </div>
-                      <div className="flex justify-between items-center text-emerald-400 mt-1">
-                        <span className="text-[10px] uppercase font-bold text-slate-500">Abonado:</span>
-                        <span className="font-bold text-xs">{formatCurrency(booking.depositAmount || 0)}</span>
-                      </div>
-                      <div className="flex justify-between items-center text-amber-400 mt-1 font-bold pt-1 border-t border-slate-800/80">
-                        <span className="text-[10px] uppercase font-bold">Saldo:</span>
-                        <span className="font-black text-xs">{formatCurrency(booking.balanceDue || 0)}</span>
+
+                      <div className="flex gap-1.5 mt-2">
+                        <button
+                          onClick={() => onOpenChecklist(booking)}
+                          className="flex-1 bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-300 font-bold py-1.5 px-2 rounded-lg border border-cyan-500/30 flex items-center justify-center gap-1 text-xs transition-colors"
+                        >
+                          <Cable className="w-3.5 h-3.5" />
+                          <span>Ver Cables</span>
+                        </button>
+                        {booking.eventLocation && (
+                          <a
+                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(booking.eventLocation)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 font-bold py-1.5 px-2.5 rounded-lg border border-emerald-500/30 flex items-center justify-center gap-1 text-xs transition-colors"
+                            title="Abrir en Google Maps"
+                          >
+                            <span>GPS</span>
+                          </a>
+                        )}
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => onOpenPayment(booking)}
-                      className="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold py-1 px-2 rounded-lg border border-amber-500/30 flex items-center justify-center gap-1.5 transition-colors text-xs"
+                  ) : (
+                    <div 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="bg-slate-950/90 p-3.5 rounded-xl border border-slate-800/80 flex flex-col justify-between min-h-[135px]"
                     >
-                      <DollarSign className="w-3.5 h-3.5" />
-                      <span>Gestionar Abonos</span>
-                    </button>
-                  </div>
+                      <div>
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span className="text-[10px] uppercase font-bold text-slate-500">Total:</span>
+                          <span className="font-extrabold text-white text-xs">{formatCurrency(booking.totalAmount)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-emerald-400 mt-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-500">Abonado:</span>
+                          <span className="font-bold text-xs">{formatCurrency(booking.depositAmount || 0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-400 mt-1 font-bold pt-1 border-t border-slate-800/80">
+                          <span className="text-[10px] uppercase font-bold">Saldo:</span>
+                          <span className="font-black text-xs">{formatCurrency(booking.balanceDue || 0)}</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => onOpenPayment(booking)}
+                        className="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold py-1 px-2 rounded-lg border border-amber-500/30 flex items-center justify-center gap-1.5 transition-colors text-xs"
+                      >
+                        <DollarSign className="w-3.5 h-3.5" />
+                        <span>Gestionar Abonos</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom Workflow Action Buttons */}
@@ -237,6 +341,23 @@ export default function OrdersInbox({
                     >
                       <Cable className="w-3.5 h-3.5 text-cyan-400" />
                       <span>{booking.checklistVerified ? '✓ Cables Verificados' : 'Revisar Checklist de Cables'}</span>
+                    </button>
+
+                    {/* Botón Reportar Daño / Avería del Evento */}
+                    <button
+                      onClick={() => {
+                        setDamageModalBooking(booking);
+                        setReportEqId(booking.items?.[0]?.equipmentId || booking.items?.[0]?.id || '');
+                        setReportQty(1);
+                        setReportDesc('');
+                        setReportWarrantyAmount(0);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 transition-colors"
+                      title="Reportar equipo averiado o con daño en este evento"
+                    >
+                      <Wrench className="w-3.5 h-3.5 text-rose-400" />
+                      <span className="hidden sm:inline">Reportar Daño</span>
+                      <span className="sm:hidden">Daño</span>
                     </button>
                   </div>
 
@@ -271,8 +392,14 @@ export default function OrdersInbox({
 
                     {booking.status !== 'Cancelado' && booking.status !== 'Finalizado' && (
                       <button
-                        onClick={() => {
-                          if (confirm('¿Seguro que deseas cancelar esta orden y liberar su stock?')) {
+                        onClick={async () => {
+                          const confirmed = await showConfirm({
+                            title: '¿Cancelar esta orden?',
+                            text: 'Al cancelar la orden se liberará inmediatamente el stock comprometido.',
+                            confirmButtonText: 'Sí, cancelar orden',
+                            icon: 'warning'
+                          });
+                          if (confirmed) {
                             onUpdateStatus(booking.id, 'Cancelado');
                           }
                         }}
@@ -323,6 +450,190 @@ export default function OrdersInbox({
           setDetailBooking(prev => prev && prev.id === id ? { ...prev, status: st } : prev);
         }}
       />
+
+      {/* Modal Reporte Rápido de Avería desde Evento */}
+      {damageModalBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
+          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+            
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/30">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">Reportar Daño en Evento #{damageModalBooking.id}</h3>
+                  <p className="text-xs text-slate-400">Cliente: {damageModalBooking.clientName}</p>
+                </div>
+              </div>
+              <button onClick={() => setDamageModalBooking(null)} className="p-2 text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!onSaveRepair) return;
+                const selectedItem = (damageModalBooking.items || []).find(it => (it.equipmentId || it.id) === reportEqId) || damageModalBooking.items?.[0];
+                if (!selectedItem) return;
+
+                const newRepair = {
+                  id: `REP-${Math.floor(100 + Math.random() * 900)}`,
+                  equipmentId: selectedItem.equipmentId || selectedItem.id,
+                  equipmentName: selectedItem.name,
+                  quantity: Number(reportQty) || 1,
+                  reportedDate: new Date().toISOString().split('T')[0],
+                  reportedBy: currentRole === 'staff' ? 'Técnico de Tarima & Bodega' : 'Encargado de Operaciones',
+                  bookingId: damageModalBooking.id,
+                  clientName: damageModalBooking.clientName,
+                  clientPhone: damageModalBooking.clientPhone || '',
+                  issueType: reportType,
+                  severity: reportSeverity,
+                  description: reportDesc.trim(),
+                  status: 'Pendiente',
+                  technicianAssigned: 'Técnico de Tarima & Bodega',
+                  costSpareParts: 0,
+                  sparePartsNotes: '',
+                  solutionNotes: '',
+                  repairedDate: '',
+                  warrantyChargedToClient: reportChargeWarranty,
+                  warrantyAmount: Number(reportWarrantyAmount) || 0,
+                  createdAt: new Date().toISOString()
+                };
+
+                onSaveRepair(newRepair);
+                setDamageModalBooking(null);
+                setReportDesc('');
+                setReportWarrantyAmount(0);
+              }}
+              className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1 text-xs"
+            >
+              
+              {/* Equipo averiado */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Equipo Afectado en este Evento *
+                </label>
+                <select
+                  value={reportEqId}
+                  onChange={(e) => setReportEqId(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400"
+                  required
+                >
+                  {(damageModalBooking.items || []).map((it, i) => (
+                    <option key={i} value={it.equipmentId || it.id}>
+                      {it.name} (Alquilado: {it.quantity}x)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Cantidad Dañada
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={reportQty}
+                    onChange={(e) => setReportQty(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white font-mono text-center focus:border-amber-400 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Severidad
+                  </label>
+                  <select
+                    value={reportSeverity}
+                    onChange={(e) => setReportSeverity(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 outline-none"
+                  >
+                    <option value="Alta">🔴 Alta (Inoperativo)</option>
+                    <option value="Media">🟡 Media (Falla Parcial)</option>
+                    <option value="Baja">🟢 Baja (Menor)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Tipo de Falla
+                </label>
+                <select
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 outline-none"
+                >
+                  <option value="Sonido / Driver">🔊 Sonido / Driver / Bobina quemada</option>
+                  <option value="Eléctrico / Encendido">⚡ Eléctrico / Fuente / No enciende</option>
+                  <option value="Cables / Conectores">🔌 Cables / Conector Speakon / XLR</option>
+                  <option value="Estructural / Golpe">🔨 Estructural / Golpe / Plástico roto</option>
+                  <option value="Luces / Motor">💡 Luces / Motor / Sensor / LED</option>
+                  <option value="Líquidos / Humedad">💧 Líquidos derramados / Lluvia</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Diagnóstico Preliminar de Recepción *
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Detalla cómo llegó el equipo tras el evento..."
+                  value={reportDesc}
+                  onChange={(e) => setReportDesc(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400 resize-none"
+                />
+              </div>
+
+              {/* Cobro al Cliente */}
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={reportChargeWarranty}
+                    onChange={(e) => setReportChargeWarranty(e.target.checked)}
+                    className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
+                  />
+                  <span className="font-bold text-white text-xs">Cobrar Garantía / Reparación a {damageModalBooking.clientName}</span>
+                </label>
+
+                {reportChargeWarranty && (
+                  <div className="pt-2">
+                    <label className="block text-[11px] text-slate-400 mb-1">
+                      Monto a Cobrar por Garantía (COP)
+                    </label>
+                    <input
+                      type="number"
+                      value={reportWarrantyAmount}
+                      onChange={(e) => setReportWarrantyAmount(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-cyan-400 font-mono font-bold outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  className="w-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold py-3 rounded-xl text-xs shadow-lg shadow-rose-600/20 active:scale-[0.98] transition-all"
+                >
+                  Enviar a Taller & Bloquear del Stock
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

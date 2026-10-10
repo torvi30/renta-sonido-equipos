@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
 import { 
   TrendingUp, DollarSign, Calendar, Package, 
-  BarChart3, Award, CheckCircle2, XCircle, ArrowUpRight 
+  BarChart3, Award, CheckCircle2, XCircle, ArrowUpRight,
+  Users, Wrench, Clock
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 
-export default function FinancialReports({ bookings, equipmentList }) {
+export default function FinancialReports({ 
+  bookings, 
+  equipmentList, 
+  repairs = [],
+  payroll = [],
+  onOpenReceivablesPayroll
+}) {
   const [selectedMonth, setSelectedMonth] = useState('ALL');
 
   // Filtrar bookings por mes si se selecciona uno
@@ -19,6 +26,16 @@ export default function FinancialReports({ bookings, equipmentList }) {
   const totalIncomePotential = validBookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
   const totalCollected = validBookings.reduce((sum, b) => sum + (b.depositAmount || 0), 0);
   const totalPending = validBookings.reduce((sum, b) => sum + (b.balanceDue || 0), 0);
+
+  // Métricas de Nómina & Salarios al Personal
+  const totalSalaries = payroll.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalPendingSalaries = payroll.filter(p => p.status === 'Por Pagar').reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const totalPaidSalaries = payroll.filter(p => p.status === 'Pagado').reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+
+  // Métricas de Taller y Mantenimiento
+  const totalRepairCosts = repairs.reduce((sum, r) => sum + (Number(r.costSpareParts) || 0), 0);
+  const totalWarrantiesRecovered = repairs.filter(r => r.warrantyChargedToClient).reduce((sum, r) => sum + (Number(r.warrantyAmount) || 0), 0);
+  const netMaintenanceCost = Math.max(0, totalRepairCosts - totalWarrantiesRecovered);
 
   // Efectividad de Cotizaciones
   const approvedCount = filteredBookings.filter(b => b.status === 'Aprobado' || b.status === 'En Evento' || b.status === 'Finalizado').length;
@@ -84,19 +101,19 @@ export default function FinancialReports({ bookings, equipmentList }) {
       </div>
 
       {/* Financial Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         
         {/* Total Facturado */}
-        <div className="bg-[#111622] p-5 rounded-3xl border border-slate-800 relative overflow-hidden shadow-lg">
+        <div className="bg-[#111622] p-4 sm:p-5 rounded-3xl border border-slate-800 relative overflow-hidden shadow-lg">
           <div className="flex justify-between items-start">
             <span className="text-xs font-bold uppercase text-slate-400">
-              Valor Total Contratado
+              Valor Contratado
             </span>
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-white mt-3 tracking-tight">
+          <h3 className="text-xl sm:text-2xl font-black text-white mt-3 tracking-tight">
             {formatCurrency(totalIncomePotential)}
           </h3>
           <p className="text-[11px] text-slate-400 mt-1">
@@ -105,38 +122,86 @@ export default function FinancialReports({ bookings, equipmentList }) {
         </div>
 
         {/* Abonos Recaudados */}
-        <div className="bg-[#111622] p-5 rounded-3xl border border-emerald-500/30 relative overflow-hidden shadow-lg">
+        <div className="bg-[#111622] p-4 sm:p-5 rounded-3xl border border-emerald-500/30 relative overflow-hidden shadow-lg">
           <div className="flex justify-between items-start">
             <span className="text-xs font-bold uppercase text-slate-400">
-              Dinero en Caja / Bancos
+              Caja / Bancos
             </span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <DollarSign className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-emerald-400 mt-3 tracking-tight">
+          <h3 className="text-xl sm:text-2xl font-black text-emerald-400 mt-3 tracking-tight">
             {formatCurrency(totalCollected)}
           </h3>
           <p className="text-[11px] text-emerald-300/80 mt-1">
-            Cobrado efectivamente vía Nequi/Efectivo
+            Abonos ya recibidos
           </p>
         </div>
 
-        {/* Saldos por Cobrar */}
-        <div className="bg-[#111622] p-5 rounded-3xl border border-amber-500/30 relative overflow-hidden shadow-lg">
+        {/* Saldos por Cobrar (Interactivo) */}
+        <div 
+          onClick={() => onOpenReceivablesPayroll && onOpenReceivablesPayroll('receivables')}
+          className="bg-[#111622] p-4 sm:p-5 rounded-3xl border border-amber-500/40 relative overflow-hidden shadow-lg cursor-pointer hover:border-amber-400 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+        >
           <div className="flex justify-between items-start">
-            <span className="text-xs font-bold uppercase text-slate-400">
-              Saldos Pendientes en Sitio
+            <span className="text-xs font-bold uppercase text-slate-400 group-hover:text-amber-300 transition-colors">
+              Saldos por Cobrar
             </span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500/20 transition-all">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-amber-400 mt-3 tracking-tight">
-            {formatCurrency(totalPending)}
+          <h3 className="text-xl sm:text-2xl font-black text-amber-400 mt-3 tracking-tight flex items-center justify-between">
+            <span>{formatCurrency(totalPending)}</span>
+            <span className="text-[10px] font-bold text-amber-400/90 group-hover:translate-x-0.5 transition-transform">
+              Cobrar →
+            </span>
           </h3>
           <p className="text-[11px] text-amber-300/80 mt-1">
-            Por cobrar al montar en eventos
+            {validBookings.filter(b => (b.balanceDue || 0) > 0).length} clientes con saldo (Gestionar)
+          </p>
+        </div>
+
+        {/* Nómina & Salarios Personal (Interactivo) */}
+        <div 
+          onClick={() => onOpenReceivablesPayroll && onOpenReceivablesPayroll('payroll')}
+          className="bg-[#111622] p-4 sm:p-5 rounded-3xl border border-purple-500/40 relative overflow-hidden shadow-lg cursor-pointer hover:border-purple-400 hover:scale-[1.02] active:scale-[0.98] transition-all group"
+        >
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-bold uppercase text-slate-400 group-hover:text-purple-300 transition-colors">
+              Nómina & Salarios
+            </span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:bg-purple-500/20 transition-all">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black text-purple-400 mt-3 tracking-tight flex items-center justify-between">
+            <span>{formatCurrency(totalPaidSalaries)}</span>
+            <span className="text-[10px] font-bold text-purple-400/90 group-hover:translate-x-0.5 transition-transform">
+              Ver →
+            </span>
+          </h3>
+          <p className="text-[11px] text-purple-300/80 mt-1">
+            Por pagar: {formatCurrency(totalPendingSalaries)} (Gestionar)
+          </p>
+        </div>
+
+        {/* Gasto en Taller & Repuestos */}
+        <div className="bg-[#111622] p-4 sm:p-5 rounded-3xl border border-rose-500/30 relative overflow-hidden shadow-lg">
+          <div className="flex justify-between items-start">
+            <span className="text-xs font-bold uppercase text-slate-400">
+              Gastos de Taller
+            </span>
+            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+              <Award className="w-4 h-4" />
+            </div>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black text-rose-400 mt-3 tracking-tight">
+            {formatCurrency(totalRepairCosts)}
+          </h3>
+          <p className="text-[11px] text-cyan-400 mt-1">
+            Garantías: {formatCurrency(totalWarrantiesRecovered)}
           </p>
         </div>
 

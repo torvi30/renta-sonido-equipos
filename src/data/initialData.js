@@ -307,3 +307,85 @@ export const CATEGORIES = [
   "Luces y Efectos",
   "Cables y Energía"
 ];
+
+export const INITIAL_REPAIRS = [
+  {
+    id: "REP-201",
+    equipmentId: "eq-1",
+    equipmentName: "Cabina Activa JBL PRX815W (1500W)",
+    quantity: 1,
+    reportedDate: "2026-10-08",
+    reportedBy: "Técnico de Tarima & Bodega",
+    bookingId: "SEC-1022",
+    clientName: "David Gómez (Cumpleaños 30)",
+    clientPhone: "+573204561122",
+    issueType: "Sonido / Driver",
+    severity: "Alta",
+    description: "No emite sonido en agudos (trompeta de alta frecuencia muda). Se recalentó la bobina.",
+    status: "En Taller", // 'Pendiente', 'En Taller', 'Listo', 'Baja'
+    technicianAssigned: "Técnico de Tarima & Bodega",
+    costSpareParts: 65000,
+    sparePartsNotes: "Repuesto diafragma titanio 1.75\" JBL original",
+    solutionNotes: "Reemplazado diafragma y probado en banco de audio a 75% durante 20 minutos.",
+    repairedDate: "",
+    warrantyChargedToClient: true,
+    warrantyAmount: 65000,
+    createdAt: "2026-10-08T16:00:00Z"
+  },
+  {
+    id: "REP-202",
+    equipmentId: "eq-6",
+    equipmentName: "Kit 2 Micrófonos Inalámbricos Shure BLX288/PG58",
+    quantity: 1,
+    reportedDate: "2026-10-07",
+    reportedBy: "Encargado de Operaciones",
+    bookingId: "",
+    clientName: "",
+    clientPhone: "",
+    issueType: "Cables / Conectores",
+    severity: "Media",
+    description: "Falso contacto en la antena A del receptor. Pierde señal a más de 10 metros.",
+    status: "Pendiente",
+    technicianAssigned: "Técnico de Tarima & Bodega",
+    costSpareParts: 15000,
+    sparePartsNotes: "Conector BNC de chasis hembra",
+    solutionNotes: "",
+    repairedDate: "",
+    warrantyChargedToClient: false,
+    warrantyAmount: 0,
+    createdAt: "2026-10-07T11:20:00Z"
+  }
+];
+
+export const INITIAL_PAYROLL = [
+  {
+    id: "PAY-101",
+    workerName: "Técnico de Tarima & Bodega",
+    role: "Técnico de Sonido & Montaje",
+    bookingId: "SEC-1022",
+    eventName: "Cumpleaños 30 David Gómez",
+    eventDate: "2026-10-08",
+    concept: "Turno montaje de 2 cabinas JBL, consola DJ y luces",
+    amount: 80000,
+    status: "Por Pagar",
+    paidDate: "",
+    paymentMethod: "Nequi",
+    notes: "Pagar al finalizar la recogida a las 3:00 AM",
+    createdAt: "2026-10-08T18:00:00Z"
+  },
+  {
+    id: "PAY-102",
+    workerName: "Encargado de Operaciones",
+    role: "Operador de Consola & Iluminación",
+    bookingId: "SEC-1021",
+    eventName: "Boda Valentina & Carlos",
+    eventDate: "2026-10-10",
+    concept: "Operación de consola digital, micrófonos y luces robóticas",
+    amount: 150000,
+    status: "Pagado",
+    paidDate: "2026-10-09",
+    paymentMethod: "Transferencia Bancolombia",
+    notes: "Abonado con anticipo",
+    createdAt: "2026-10-06T12:00:00Z"
+  }
+];

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Settings, Phone, MessageSquare, ShieldCheck, Flame, Info } from 'lucide-react';
+import { X, Settings, Phone, MessageSquare, ShieldCheck, Flame, Info, LogOut, Eye, EyeOff } from 'lucide-react';
 import { getStoredSettings, saveStoredSettings } from '../../services/storageService';
+import { showAlert, showSuccess, showError } from '../../services/alertService';
 import { isFirebaseConfigured } from '../../firebase/config';
 
-export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
+export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogout }) {
   if (!isOpen) return null;
 
   const current = getStoredSettings();
@@ -13,7 +14,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
   const [whatsappNumber, setWhatsappNumber] = useState(current.whatsappNumber);
   const [phone, setPhone] = useState(current.phone);
   const [terms, setTerms] = useState(current.termsAndConditions);
+  const [showPins, setShowPins] = useState(true);
   const [adminPin, setAdminPin] = useState(current.adminPin || '1234');
+  const [managerPin, setManagerPin] = useState(current.managerPin || '2020');
+  const [staffPin, setStaffPin] = useState(current.staffPin || '3030');
+  const [workersList, setWorkersList] = useState(current.workers || []);
+  const [newWorkerName, setNewWorkerName] = useState('');
+  const [newWorkerRole, setNewWorkerRole] = useState('staff');
+  const [newWorkerPin, setNewWorkerPin] = useState('');
 
   const handleExportBackup = () => {
     const data = {
@@ -36,20 +44,45 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const parsed = JSON.parse(event.target.result);
         if (parsed.equipment) localStorage.setItem('sec_equipment_data', JSON.stringify(parsed.equipment));
         if (parsed.combos) localStorage.setItem('sec_combos_data', JSON.stringify(parsed.combos));
         if (parsed.bookings) localStorage.setItem('sec_bookings_data', JSON.stringify(parsed.bookings));
         if (parsed.settings) localStorage.setItem('sec_admin_settings', JSON.stringify(parsed.settings));
-        alert('✓ Backup restaurado correctamente. La página se recargará para aplicar los cambios.');
+        await showSuccess('¡Backup restaurado!', 'La información fue cargada exitosamente. La página se actualizará.');
         window.location.reload();
       } catch (err) {
-        alert('Error al leer el archivo de backup: ' + err.message);
+        showError('Error de backup', 'Error al leer el archivo de backup: ' + err.message);
       }
     };
     reader.readAsText(file);
+  };
+
+  const handleAddWorker = () => {
+    if (!newWorkerName.trim() || newWorkerPin.length !== 4) {
+      showAlert({
+        title: 'Datos requeridos',
+        text: 'Ingresa el nombre del trabajador y un PIN de 4 dígitos.',
+        icon: 'warning'
+      });
+      return;
+    }
+    const newWorker = {
+      id: `w-${Date.now()}`,
+      name: newWorkerName.trim(),
+      role: newWorkerRole,
+      pin: newWorkerPin.trim(),
+      phone: ''
+    };
+    setWorkersList(prev => [...prev, newWorker]);
+    setNewWorkerName('');
+    setNewWorkerPin('');
+  };
+
+  const handleRemoveWorker = (id) => {
+    setWorkersList(prev => prev.filter(w => w.id !== id));
   };
 
   const handleSave = (e) => {
@@ -61,7 +94,10 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
       whatsappNumber: whatsappNumber.trim().replace(/\D/g, ''),
       phone: phone.trim(),
       termsAndConditions: terms.trim(),
-      adminPin: adminPin.trim() || '1234'
+      adminPin: adminPin.trim() || '1234',
+      managerPin: managerPin.trim() || '2020',
+      staffPin: staffPin.trim() || '3030',
+      workers: workersList
     };
     saveStoredSettings(updated);
     if (onSettingsSaved) onSettingsSaved(updated);
@@ -71,10 +107,10 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">
           <div className="flex items-center gap-2">
             <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
               <Settings className="w-5 h-5" />
@@ -92,7 +128,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSave} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           
           {/* Cloud Sync Status Info */}
           <div className={`p-3 rounded-2xl border flex items-center gap-3 ${
@@ -172,20 +208,161 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              PIN de Acceso al Panel Admin (4 dígitos)
-            </label>
-            <input
-              type="password"
-              maxLength={6}
-              value={adminPin}
-              onChange={(e) => setAdminPin(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-amber-400 font-bold focus:outline-none"
-            />
-            <p className="text-[10px] text-slate-500 mt-1">
-              Evita que los clientes que abran el catálogo entren a ver tus finanzas y pedidos.
-            </p>
+          {/* GESTIÓN DE ROLES Y PINS DE SEGURIDAD */}
+          <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-amber-400" />
+                <span className="text-xs font-bold text-white uppercase tracking-wider">
+                  Roles & PINs de Seguridad (4 Dígitos)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPins(!showPins)}
+                className="flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:text-amber-300 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800 transition-all"
+              >
+                {showPins ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                <span>{showPins ? 'Ocultar' : 'Ver PINs'}</span>
+              </button>
+            </div>
+
+            {/* 3 PINs Principales por Rango */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Super Admin */}
+              <div className="bg-slate-950 p-3 rounded-xl border border-amber-500/30">
+                <label className="block text-[11px] font-bold text-amber-400 mb-1">
+                  👑 Dueño / Super Admin
+                </label>
+                <input
+                  type={showPins ? "text" : "password"}
+                  maxLength={4}
+                  value={adminPin}
+                  onChange={(e) => setAdminPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-center font-mono font-bold text-amber-400 text-base focus:border-amber-400 outline-none"
+                  placeholder="1234"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Acceso 100% total (finanzas, landing, reportes).
+                </p>
+              </div>
+
+              {/* Admin Operativo */}
+              <div className="bg-slate-950 p-3 rounded-xl border border-cyan-500/30">
+                <label className="block text-[11px] font-bold text-cyan-400 mb-1">
+                  ⚡ Admin Operativo
+                </label>
+                <input
+                  type={showPins ? "text" : "password"}
+                  maxLength={4}
+                  value={managerPin}
+                  onChange={(e) => setManagerPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-center font-mono font-bold text-cyan-400 text-base focus:border-cyan-400 outline-none"
+                  placeholder="2020"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Pedidos, calendario e inventario (sin finanzas).
+                </p>
+              </div>
+
+              {/* Staff Técnico */}
+              <div className="bg-slate-950 p-3 rounded-xl border border-emerald-500/30">
+                <label className="block text-[11px] font-bold text-emerald-400 mb-1">
+                  🔧 Staff / Técnico
+                </label>
+                <input
+                  type={showPins ? "text" : "password"}
+                  maxLength={4}
+                  value={staffPin}
+                  onChange={(e) => setStaffPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-center font-mono font-bold text-emerald-400 text-base focus:border-emerald-400 outline-none"
+                  placeholder="3030"
+                />
+                <p className="text-[9px] text-slate-400 mt-1">
+                  Solo despacho, checklists y eventos.
+                </p>
+              </div>
+            </div>
+
+            {/* Lista de Trabajadores Específicos */}
+            <div className="pt-2 border-t border-slate-800">
+              <span className="text-[11px] font-bold text-slate-300 block mb-2">
+                Trabajadores con PIN Individual:
+              </span>
+
+              <div className="space-y-1.5 mb-3 max-h-36 overflow-y-auto pr-1">
+                {workersList.map((worker) => (
+                  <div
+                    key={worker.id}
+                    className="flex items-center justify-between bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-xl text-xs"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-white">{worker.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                        worker.role === 'superadmin'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          : worker.role === 'admin'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                      }`}>
+                        {worker.role === 'superadmin' ? 'Dueño' : worker.role === 'admin' ? 'Admin' : 'Técnico'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-slate-400 font-mono text-[11px] bg-slate-900 px-2 py-0.5 rounded">
+                        PIN: {worker.pin}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveWorker(worker.id)}
+                        className="text-rose-400 hover:text-rose-300 font-bold px-1 py-0.5"
+                        title="Eliminar trabajador"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Formulario para agregar trabajador (Mobile friendly) */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-slate-950/70 p-2 sm:p-0 rounded-xl sm:rounded-none border sm:border-0 border-slate-800">
+                <input
+                  type="text"
+                  placeholder="Nombre trabajador (ej. Carlos)"
+                  value={newWorkerName}
+                  onChange={(e) => setNewWorkerName(e.target.value)}
+                  className="sm:col-span-5 bg-slate-900 sm:bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-white focus:border-amber-400 outline-none"
+                />
+                <select
+                  value={newWorkerRole}
+                  onChange={(e) => setNewWorkerRole(e.target.value)}
+                  className="sm:col-span-3 bg-slate-900 sm:bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-slate-300 focus:border-amber-400 outline-none"
+                >
+                  <option value="staff">🔧 Técnico</option>
+                  <option value="admin">⚡ Admin</option>
+                  <option value="superadmin">👑 Dueño</option>
+                </select>
+                <div className="flex gap-2 sm:col-span-4">
+                  <input
+                    type={showPins ? "text" : "password"}
+                    maxLength={4}
+                    placeholder="PIN"
+                    value={newWorkerPin}
+                    onChange={(e) => setNewWorkerPin(e.target.value.replace(/\D/g, ''))}
+                    className="w-20 sm:w-16 bg-slate-900 sm:bg-slate-950 border border-slate-700 rounded-xl px-2 py-2 text-xs text-white font-mono text-center focus:border-amber-400 outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddWorker}
+                    className="flex-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold py-2 rounded-xl transition-colors whitespace-nowrap shadow-sm active:scale-95"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div>
@@ -229,13 +406,27 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }) {
           </div>
 
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-2">
             <button
               type="submit"
-              className="w-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3 rounded-xl text-sm shadow-lg shadow-amber-500/20"
+              className="flex-1 bg-amber-500 hover:bg-amber-400 text-black font-extrabold py-3 rounded-xl text-sm shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all"
             >
               Guardar Ajustes
             </button>
+            {onLogout && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onLogout();
+                }}
+                className="flex items-center justify-center gap-1.5 bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border border-rose-500/40 py-3 px-4 rounded-xl text-xs font-black transition-all shadow-md active:scale-[0.98]"
+                title="Cerrar sesión de administrador"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>Cerrar Sesión</span>
+              </button>
+            )}
           </div>
 
         </form>

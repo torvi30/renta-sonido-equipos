@@ -137,7 +137,7 @@ export default function CalendarView({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center justify-end gap-2 flex-wrap">
           <button
             onClick={prevMonth}
             className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
@@ -156,12 +156,48 @@ export default function CalendarView({
             Hoy
           </button>
           <button
+            onClick={() => {
+              const now = new Date();
+              const day = now.getDay();
+              const diff = (6 - day + 7) % 7 || 7;
+              now.setDate(now.getDate() + diff);
+              setCurrentDate(now);
+              setSelectedDayStr(now.toISOString().split('T')[0]);
+            }}
+            className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-300 border border-amber-500/30 transition-colors"
+          >
+            Fin de Semana 🎉
+          </button>
+          <button
             onClick={nextMonth}
             className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
             title="Mes siguiente"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
+        </div>
+      </div>
+
+      {/* Status Legend Bar */}
+      <div className="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none px-2 py-1 text-[11px] text-slate-400">
+        <span className="font-bold text-slate-500 shrink-0">Estados:</span>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Aprobado / Stock Bloqueado</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-cyan-400" />
+            <span>En Evento</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span>Pendiente</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-purple-400" />
+            <span>Devuelto / Finalizado</span>
+          </span>
         </div>
       </div>
 

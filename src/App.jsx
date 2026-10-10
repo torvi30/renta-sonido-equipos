@@ -8,22 +8,39 @@ import FaqSection from './components/Catalog/FaqSection';
 import EventGallery from './components/Catalog/EventGallery';
 import Toast from './components/Toast';
 
-// Code-splitting: Carga diferida de componentes de administrador para que la tienda pública cargue ultra-rápida
-const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard'));
-const AdminAuthGuard = lazy(() => import('./components/Admin/AdminAuthGuard'));
-const PaymentModal = lazy(() => import('./components/Admin/PaymentModal'));
-const ChecklistModal = lazy(() => import('./components/Admin/ChecklistModal'));
-const ReceiptModal = lazy(() => import('./components/Admin/ReceiptModal'));
-const SettingsModal = lazy(() => import('./components/Admin/SettingsModal'));
+import AdminAuthGuard from './components/Admin/AdminAuthGuard';
 
+// Carga resiliente ante nuevos deploys: si falla un chunk antiguo en caché, refresca automáticamente
+const safeLazy = (importFn) => lazy(() => 
+  importFn().catch(err => {
+    console.warn('Recargando por actualización de versión...', err);
+    window.location.reload();
+    return new Promise(() => {}); // evita que rompa la pantalla mientras recarga
+  })
+);
+
+const AdminDashboard = safeLazy(() => import('./components/Admin/AdminDashboard'));
+const PaymentModal = safeLazy(() => import('./components/Admin/PaymentModal'));
+const ChecklistModal = safeLazy(() => import('./components/Admin/ChecklistModal'));
+const ReceiptModal = safeLazy(() => import('./components/Admin/ReceiptModal'));
+const SettingsModal = safeLazy(() => import('./components/Admin/SettingsModal'));
+const PinManagerModal = safeLazy(() => import('./components/Admin/PinManagerModal'));
+const ReceivablesAndPayrollModal = safeLazy(() => import('./components/Admin/ReceivablesAndPayrollModal'));
+
+import AdminSidebar from './components/Admin/AdminSidebar';
 import { 
   getStoredEquipment, saveStoredEquipment,
   getStoredCombos, saveStoredCombos,
   getStoredBookings, saveStoredBookings,
+  getStoredRepairs, saveStoredRepairs,
+  getStoredPayroll, saveStoredPayroll,
   checkEquipmentAvailability, getStoredSettings, saveStoredSettings
 } from './services/storageService';
 import { CATEGORIES } from './data/initialData';
-import { Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, MapPin, Search, ArrowUpDown } from 'lucide-react';
+import { 
+  Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, 
+  MapPin, Search, ArrowUpDown, Menu, Eye, LogOut 
+} from 'lucide-react';
 
 const InstagramIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -43,6 +60,10 @@ export default function App() {
   // Navigation state: 'catalog' o 'admin'
   const [activeTab, setActiveTab] = useState(() => isInitialAdmin() ? 'admin' : 'catalog');
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [currentAdminRole, setCurrentAdminRole] = useState('superadmin'); // 'superadmin' | 'admin' | 'staff'
+  const [currentWorkerName, setCurrentWorkerName] = useState('');
+  const [adminSubTab, setAdminSubTab] = useState('orders');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Navegación limpia con URL History API
   const handleNavigate = (tab) => {
@@ -88,6 +109,7 @@ export default function App() {
   // Modals state
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPinManagerOpen, setIsPinManagerOpen] = useState(false);
   const [paymentBooking, setPaymentBooking] = useState(null);
   const [checklistBooking, setChecklistBooking] = useState(null);
   const [receiptBooking, setReceiptBooking] = useState(null);
@@ -104,6 +126,74 @@ export default function App() {
   useEffect(() => {
     saveStoredCombos(combosList);
   }, [combosList]);
+
+  const [repairs, setRepairs] = useState(() => getStoredRepairs());
+
+  useEffect(() => {
+    saveStoredRepairs(repairs);
+  }, [repairs]);
+
+  // Gestión de Nómina y Salarios de Personal (Técnicos, DJs, Cargadores)
+  const [payroll, setPayroll] = useState(() => getStoredPayroll());
+
+  useEffect(() => {
+    saveStoredPayroll(payroll);
+  }, [payroll]);
+
+  const handleSavePayroll = (record) => {
+    setPayroll(prev => {
+      const exists = prev.find(p => p.id === record.id);
+      if (exists) {
+        return prev.map(p => p.id === record.id ? record : p);
+      }
+      return [record, ...prev];
+    });
+    showToast(`👷 Nómina: ${record.workerName} guardado`);
+  };
+
+  const handleDeletePayroll = (payrollId) => {
+    setPayroll(prev => prev.filter(p => p.id !== payrollId));
+    showToast('🗑️ Registro de nómina eliminado');
+  };
+
+  const [isReceivablesPayrollOpen, setIsReceivablesPayrollOpen] = useState(false);
+  const [receivablesPayrollTab, setReceivablesPayrollTab] = useState('receivables');
+
+  const handleOpenReceivablesPayroll = (tab = 'receivables') => {
+    setReceivablesPayrollTab(tab);
+    setIsReceivablesPayrollOpen(true);
+  };
+
+  const handleSaveRepair = (repair) => {
+    setRepairs(prev => {
+      const exists = prev.find(r => r.id === repair.id);
+      if (exists) {
+        return prev.map(r => r.id === repair.id ? repair : r);
+      }
+      return [repair, ...prev];
+    });
+    showToast(`🛠️ Taller: ${repair.equipmentName}`);
+  };
+
+  const handleDeleteRepair = (repairId) => {
+    setRepairs(prev => prev.filter(r => r.id !== repairId));
+    showToast('🗑️ Registro de taller eliminado');
+  };
+
+  const handleUpdateRepairStatus = (repairId, newStatus, extraData = {}) => {
+    setRepairs(prev => prev.map(r => {
+      if (r.id === repairId) {
+        return {
+          ...r,
+          status: newStatus,
+          ...extraData,
+          repairedDate: newStatus === 'Listo' ? new Date().toISOString().split('T')[0] : r.repairedDate
+        };
+      }
+      return r;
+    }));
+    showToast(`Estado de taller: ${newStatus}`);
+  };
 
   // Sincronizar historial del navegador y atajo de teclado para el DJ
   useEffect(() => {
@@ -325,24 +415,151 @@ export default function App() {
   const cartTotalItems = useMemo(() => cart.reduce((sum, it) => sum + it.quantity, 0), [cart]);
 
   return (
-    <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       
-      {/* Main Navbar */}
-      <Navbar
-        activeTab={activeTab}
-        onNavigate={handleNavigate}
-        cartCount={cartTotalItems}
-        onOpenCart={() => setIsCartOpen(true)}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onLockAdmin={() => {
-          setIsAdminAuthenticated(false);
-          showToast('🔒 Panel bloqueado con éxito');
-        }}
-        settings={settings}
-      />
+      {/* VISTA 1: PANEL DE ADMINISTRADOR AUTENTICADO (Layout SaaS con Sidebar) */}
+      {activeTab === 'admin' && isAdminAuthenticated ? (
+        <div className="flex-1 flex flex-col lg:flex-row w-full min-h-screen">
+          {/* Sidebar lateral fijo en Desktop y Drawer en Celulares */}
+          <AdminSidebar
+            adminTab={adminSubTab}
+            setAdminTab={setAdminSubTab}
+            currentRole={currentAdminRole}
+            currentWorkerName={currentWorkerName}
+            settings={settings}
+            pendingOrdersCount={bookings.filter(b => b.status === 'Pendiente').length}
+            activeRepairsCount={repairs.filter(r => r.status === 'Pendiente' || r.status === 'En Taller').length}
+            onNavigateWeb={() => handleNavigate('catalog')}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenPinManager={() => setIsPinManagerOpen(true)}
+            onOpenReceivablesPayroll={handleOpenReceivablesPayroll}
+            onLogout={() => {
+              setIsAdminAuthenticated(false);
+              setCurrentWorkerName('');
+              showToast('🔒 Sesión cerrada');
+            }}
+            isOpenMobile={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+          />
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          {/* Área Principal del Dashboard */}
+          <div className="flex-1 min-w-0 flex flex-col min-h-screen bg-[#090c13]">
+            {/* Header móvil exclusivo para pantallas pequeñas (<lg) */}
+            <header className="lg:hidden sticky top-0 z-30 bg-[#0a0e18]/95 backdrop-blur-md border-b border-amber-500/20 px-3.5 py-3 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <button
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:text-white shrink-0 active:scale-95 transition-transform"
+                  title="Abrir menú"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="min-w-0">
+                  <h1 className="font-black text-xs sm:text-sm text-white truncate max-w-[140px]">
+                    {settings?.businessName || 'SOUND CONTROL'}
+                  </h1>
+                  <span className="text-[9px] font-black uppercase text-amber-400 tracking-wider">
+                    {currentAdminRole === 'superadmin' ? 'Dueño / Super Admin' : currentAdminRole === 'admin' ? 'Encargado' : 'Técnico'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => handleNavigate('catalog')}
+                  className="p-2 rounded-xl bg-slate-900 text-cyan-400 border border-slate-800 hover:text-white transition-colors"
+                  title="Ver Tienda Web"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAdminAuthenticated(false);
+                    setCurrentWorkerName('');
+                    showToast('🔒 Sesión cerrada');
+                  }}
+                  className="p-2 rounded-xl bg-rose-950/60 text-rose-300 border border-rose-500/30 hover:bg-rose-900 hover:text-white transition-colors"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            </header>
+
+            {/* Contenedor del contenido */}
+            <main className="flex-1 max-w-7xl w-full mx-auto p-3.5 sm:p-6 lg:p-8 space-y-6">
+              <Suspense fallback={
+                <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-slate-400">
+                  <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-xs font-bold text-amber-400">Cargando Panel de Control...</p>
+                </div>
+              }>
+                <div className="animate-fade-in space-y-6">
+                  <AdminDashboard
+                    adminTab={adminSubTab}
+                    setAdminTab={setAdminSubTab}
+                    isSidebarMode={true}
+                    bookings={bookings}
+                    equipmentList={equipmentList}
+                    settings={settings}
+                    currentRole={currentAdminRole}
+                    currentWorkerName={currentWorkerName}
+                    onSaveSettings={handleSaveSettings}
+                    combosList={combosList}
+                    onSaveCombo={handleSaveCombo}
+                    onDeleteCombo={handleDeleteCombo}
+                    onUpdateBookingStatus={handleUpdateBookingStatus}
+                    onOpenPayment={(b) => setPaymentBooking(b)}
+                    onOpenChecklist={(b) => setChecklistBooking(b)}
+                    onOpenReceipt={(b) => setReceiptBooking(b)}
+                    onSaveEquipment={handleSaveEquipment}
+                    onDeleteEquipment={handleDeleteEquipment}
+                    repairs={repairs}
+                    onSaveRepair={handleSaveRepair}
+                    onDeleteRepair={handleDeleteRepair}
+                    onUpdateRepairStatus={handleUpdateRepairStatus}
+                    payroll={payroll}
+                    onSavePayroll={handleSavePayroll}
+                    onDeletePayroll={handleDeletePayroll}
+                    onOpenReceivablesPayroll={handleOpenReceivablesPayroll}
+                    onLogout={() => {
+                      setIsAdminAuthenticated(false);
+                      setCurrentAdminRole('superadmin');
+                      setCurrentWorkerName('');
+                      showToast('🔒 Sesión cerrada');
+                    }}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onOpenPinManager={() => setIsPinManagerOpen(true)}
+                  />
+                </div>
+              </Suspense>
+            </main>
+          </div>
+        </div>
+      ) : (
+        /* VISTA 2: CATÁLOGO WEB PÚBLICO O PANTALLA DE ACCESO CON PIN */
+        <>
+          {/* Main Navbar */}
+          <Navbar
+            activeTab={activeTab}
+            onNavigate={handleNavigate}
+            cartCount={cartTotalItems}
+            onOpenCart={() => setIsCartOpen(true)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenPinManager={() => setIsPinManagerOpen(true)}
+            onLockAdmin={() => {
+              setIsAdminAuthenticated(false);
+              setCurrentWorkerName('');
+              showToast('🔒 Panel bloqueado con éxito');
+            }}
+            settings={settings}
+            currentRole={currentAdminRole}
+            currentWorkerName={currentWorkerName}
+            isAdminAuthenticated={isAdminAuthenticated}
+          />
+
+          {/* Main Container */}
+          <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         
         {/* PUBLIC CATALOG VIEW */}
         {activeTab === 'catalog' && (
@@ -412,7 +629,7 @@ export default function App() {
             />
 
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            <div className="flex flex-wrap items-center gap-2 pb-2">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat}
@@ -523,7 +740,7 @@ export default function App() {
 
             {/* GALLERY PORTFOLIO SECTION */}
             <div id="galeria">
-              <EventGallery gallery={settings.gallery} />
+              <EventGallery gallery={settings.gallery} settings={settings} />
             </div>
 
             {/* FAQ SECTION (Configurable from Admin) */}
@@ -554,72 +771,54 @@ export default function App() {
           </div>
         )}
 
-        {/* ADMIN DASHBOARD VIEW (Acceso Privado para el DJ - Carga diferida) */}
-        {activeTab === 'admin' && (
-          <Suspense fallback={
-            <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3 text-slate-400">
-              <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs font-bold text-amber-400">Iniciando Sound & Event Control...</p>
-            </div>
-          }>
-            {!isAdminAuthenticated ? (
-              <AdminAuthGuard
-                onUnlock={() => setIsAdminAuthenticated(true)}
-                onCancel={() => handleNavigate('catalog')}
-              />
-            ) : (
-              <div className="animate-fade-in space-y-6">
-                <AdminDashboard
-                  bookings={bookings}
-                  equipmentList={equipmentList}
-                  settings={settings}
-                  onSaveSettings={handleSaveSettings}
-                  combosList={combosList}
-                  onSaveCombo={handleSaveCombo}
-                  onDeleteCombo={handleDeleteCombo}
-                  onUpdateBookingStatus={handleUpdateBookingStatus}
-                  onOpenPayment={(b) => setPaymentBooking(b)}
-                  onOpenChecklist={(b) => setChecklistBooking(b)}
-                  onOpenReceipt={(b) => setReceiptBooking(b)}
-                  onSaveEquipment={handleSaveEquipment}
-                  onDeleteEquipment={handleDeleteEquipment}
-                />
-              </div>
-            )}
-          </Suspense>
+        {/* ADMIN LOGIN GUARD (Si entra a #admin sin PIN) */}
+        {activeTab === 'admin' && !isAdminAuthenticated && (
+          <AdminAuthGuard
+            onUnlock={(auth) => {
+              setIsAdminAuthenticated(true);
+              setCurrentAdminRole(auth?.role || 'superadmin');
+              setCurrentWorkerName(auth?.name || '');
+              showToast(`🔓 Bienvenido: ${auth?.roleLabel || 'Panel de Control'}`);
+            }}
+            onCancel={() => handleNavigate('catalog')}
+          />
         )}
 
       </main>
 
-      {/* Footer Público Profesional (Limpio para Clientes) */}
-      <footer className="border-t border-slate-900 bg-[#07090e] py-8 text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-          <div>
-            <p className="font-bold text-slate-300">
-              © {new Date().getFullYear()} {settings.businessName} • {settings.djName}
-            </p>
-            <p className="text-[11px] text-slate-500 mt-0.5">
-              Alquiler de Sonido Profesional, Iluminación & Control DJ para Eventos
-            </p>
-          </div>
+          {/* Footer Público Profesional (Limpio para Clientes) */}
+          {activeTab === 'catalog' && (
+            <footer className="border-t border-slate-900 bg-[#07090e] py-8 text-xs text-slate-500">
+              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                <div>
+                  <p className="font-bold text-slate-300">
+                    © {new Date().getFullYear()} {settings.businessName} • {settings.djName}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Alquiler de Sonido Profesional, Iluminación & Control DJ para Eventos
+                  </p>
+                </div>
 
-          <div className="flex items-center gap-3 text-[11px]">
-            {settings.cityCoverage && (
-              <span className="text-slate-400">📍 {settings.cityCoverage}</span>
-            )}
-            <span className="text-slate-800">•</span>
-            {/* Acceso discreto para el staff/dueño */}
-            <button 
-              onClick={() => handleNavigate('admin')} 
-              className="text-slate-700 hover:text-slate-400 transition-colors flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-900"
-              title="Acceso exclusivo para el DJ y Staff"
-            >
-              <span>🔒</span>
-              <span>Acceso Staff</span>
-            </button>
-          </div>
-        </div>
-      </footer>
+                <div className="flex items-center gap-3 text-[11px]">
+                  {settings.cityCoverage && (
+                    <span className="text-slate-400">📍 {settings.cityCoverage}</span>
+                  )}
+                  <span className="text-slate-800">•</span>
+                  {/* Acceso discreto para el staff/dueño */}
+                  <button 
+                    onClick={() => handleNavigate('admin')} 
+                    className="text-slate-700 hover:text-slate-400 transition-colors flex items-center gap-1.5 py-1 px-2 rounded hover:bg-slate-900"
+                    title="Acceso exclusivo para el DJ y Staff"
+                  >
+                    <span>🔒</span>
+                    <span>Acceso Staff</span>
+                  </button>
+                </div>
+              </div>
+            </footer>
+          )}
+        </>
+      )}
 
       {/* MODALS */}
       <CartModal
@@ -673,6 +872,45 @@ export default function App() {
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
             onSettingsSaved={(newSettings) => setSettings(newSettings)}
+            currentRole={currentAdminRole}
+            onLogout={() => {
+              setIsAdminAuthenticated(false);
+              setCurrentAdminRole('superadmin');
+              setCurrentWorkerName('');
+              showToast('🔒 Sesión cerrada');
+            }}
+          />
+        </Suspense>
+      )}
+
+      {isPinManagerOpen && (
+        <Suspense fallback={null}>
+          <PinManagerModal
+            isOpen={isPinManagerOpen}
+            onClose={() => setIsPinManagerOpen(false)}
+            settings={settings}
+            onSettingsSaved={(newSettings) => {
+              setSettings(newSettings);
+              showToast('🔐 PINs actualizados con éxito');
+            }}
+          />
+        </Suspense>
+      )}
+
+      {isReceivablesPayrollOpen && (
+        <Suspense fallback={null}>
+          <ReceivablesAndPayrollModal
+            isOpen={isReceivablesPayrollOpen}
+            onClose={() => setIsReceivablesPayrollOpen(false)}
+            bookings={bookings}
+            payroll={payroll}
+            workers={settings?.workers || []}
+            settings={settings}
+            onSavePayment={handleSavePayment}
+            onSavePayroll={handleSavePayroll}
+            onDeletePayroll={handleDeletePayroll}
+            onOpenPaymentModal={(b) => setPaymentBooking(b)}
+            initialTab={receivablesPayrollTab}
           />
         </Suspense>
       )}
