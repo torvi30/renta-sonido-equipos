@@ -598,6 +598,7 @@ export default function AdminDashboard({
         <FinancialReports
           bookings={bookings}
           equipmentList={equipmentList}
+          combosList={combosList}
           repairs={repairs}
           payroll={payroll}
           onOpenReceivablesPayroll={onOpenReceivablesPayroll}
