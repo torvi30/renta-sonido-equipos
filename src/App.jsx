@@ -811,7 +811,7 @@ export default function App() {
               </div>
 
               {/* RIGHT / SIDEBAR COLUMN: Live Sticky Quote & Cart Panel (Desktop) */}
-              <aside className="hidden lg:block lg:col-span-4 sticky top-6">
+              <aside className="hidden lg:block lg:col-span-4 sticky top-24">
                 <LiveQuoteSidebar
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
