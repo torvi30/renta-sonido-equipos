@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Clock, CheckCircle2, Sparkles, ChevronLeft, 
   ChevronRight, X, Plus, Minus, ArrowRight, Zap, Flame, PartyPopper
@@ -11,6 +11,7 @@ export default function DateBanner({
   rentalDays = 1, 
   setRentalDays,
   rentalMode = 'days',
+  rentalModeSet, // backward compatibility
   setRentalMode,
   rentalHours = 4,
   setRentalHours,
@@ -18,6 +19,16 @@ export default function DateBanner({
   setEventStartTime
 }) {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
+
+  // Cerrar modal con Escape
+  useEffect(() => {
+    if (!isCalendarModalOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsCalendarModalOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCalendarModalOpen]);
 
   // Fecha para navegar en el modal de calendario
   const [viewDate, setViewDate] = useState(() => {
@@ -386,8 +397,14 @@ export default function DateBanner({
       {/* MODAL / DRAWER DE CALENDARIO VISUAL INTERACTIVO Y NOTORIO */}
       {/* ========================================================= */}
       {isCalendarModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0d121f] border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+        <div 
+          onClick={() => setIsCalendarModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0d121f] border border-amber-500/40 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          >
             
             {/* Header del Calendario */}
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
@@ -444,8 +461,10 @@ export default function DateBanner({
               </button>
             </div>
 
-            {/* Navegador de Mes */}
-            <div className="p-4 flex items-center justify-between bg-[#0e1322]">
+            {/* Contenedor con scroll para pantallas móviles */}
+            <div className="overflow-y-auto flex-1">
+              {/* Navegador de Mes */}
+              <div className="p-4 flex items-center justify-between bg-[#0e1322]">
               <button
                 onClick={prevMonth}
                 className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
@@ -549,6 +568,7 @@ export default function DateBanner({
                   </button>
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Footer con Resumen y Confirmación */}

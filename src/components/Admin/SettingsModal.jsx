@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Settings, Phone, MessageSquare, ShieldCheck, Flame, Info, LogOut, Eye, EyeOff } from 'lucide-react';
 import { getStoredSettings, saveStoredSettings } from '../../services/storageService';
 import { showAlert, showSuccess, showError } from '../../services/alertService';
 import { isFirebaseConfigured } from '../../firebase/config';
 
 export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogout }) {
+  // Manejar Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const current = getStoredSettings();
@@ -106,8 +116,14 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogo
 
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">

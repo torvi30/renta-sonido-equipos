@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Layout, Image, Type, MapPin, Phone, 
   HelpCircle, Plus, Trash2, CheckCircle2, Sparkles, Eye, Save, Package,
@@ -81,6 +81,18 @@ export default function LandingManager({
   const [comboDiscount, setComboDiscount] = useState('');
   const [comboDesc, setComboDesc] = useState('');
   const [comboItemsText, setComboItemsText] = useState('');
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isGalleryModalOpen) setIsGalleryModalOpen(false);
+        if (isComboModalOpen) setIsComboModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isGalleryModalOpen, isComboModalOpen]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -774,8 +786,14 @@ export default function LandingManager({
       {/* MODAL SUBIR / EDITAR FOTO DE EVENTO REAL */}
       {/* ------------------------------------------------------------- */}
       {isGalleryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setIsGalleryModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          >
             
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
               <div className="flex items-center gap-2">
@@ -927,8 +945,14 @@ export default function LandingManager({
 
       {/* MODAL CREAR / EDITAR COMBO */}
       {isComboModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setIsComboModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          >
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-amber-400" />

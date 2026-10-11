@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Wrench, AlertTriangle, CheckCircle2, Clock, DollarSign, 
   Plus, Search, MessageSquare, ShieldAlert, Sparkles, 
@@ -22,6 +22,18 @@ export default function RepairManager({
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
   const [activeDetailRepair, setActiveDetailRepair] = useState(null);
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isNewModalOpen) setIsNewModalOpen(false);
+        if (activeDetailRepair) setActiveDetailRepair(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isNewModalOpen, activeDetailRepair]);
 
   // Estados para nuevo ingreso a taller
   const [selectedEqId, setSelectedEqId] = useState(equipmentList[0]?.id || '');
@@ -536,8 +548,14 @@ export default function RepairManager({
 
       {/* MODAL 1: NUEVO INGRESO A TALLER */}
       {isNewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+        <div 
+          onClick={() => setIsNewModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden"
+          >
             
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">
               <div className="flex items-center gap-2">
@@ -692,8 +710,14 @@ export default function RepairManager({
 
       {/* MODAL 2: FICHA TÉCNICA Y RESOLUCIÓN */}
       {activeDetailRepair && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+        <div 
+          onClick={() => setActiveDetailRepair(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden"
+          >
             
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">
               <div className="flex items-center gap-2">

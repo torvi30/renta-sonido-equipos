@@ -41,6 +41,17 @@ export default function OrdersInbox({
   const [reportChargeWarranty, setReportChargeWarranty] = useState(true);
   const [reportWarrantyAmount, setReportWarrantyAmount] = useState(0);
 
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (damageModalBooking) setDamageModalBooking(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [damageModalBooking]);
+
   const statuses = ['Todos', 'Por Cobrar', 'Pendiente', 'Aprobado', 'En Evento', 'Finalizado', 'Cancelado'];
 
   const filteredBookings = bookings.filter(b => {
@@ -453,8 +464,14 @@ export default function OrdersInbox({
 
       {/* Modal Reporte Rápido de Avería desde Evento */}
       {damageModalBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+        <div 
+          onClick={() => setDamageModalBooking(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[90vh] overflow-hidden"
+          >
             
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] flex-shrink-0">
               <div className="flex items-center gap-2">

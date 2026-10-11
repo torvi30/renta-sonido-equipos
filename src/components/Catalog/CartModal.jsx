@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Trash2, Plus, Minus, MessageSquare, Send, Calendar, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, generateWhatsAppLink } from '../../services/storageService';
 import { showAlert } from '../../services/alertService';
@@ -23,6 +23,16 @@ export default function CartModal({
   const [notes, setNotes] = useState('');
   const [orderSent, setOrderSent] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
+
+  // Cerrar con tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -127,17 +137,23 @@ export default function CartModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-2xl bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+      >
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-800 bg-[#121828]">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+        <div className="flex items-center justify-between p-3.5 sm:p-6 border-b border-slate-800 bg-[#121828] shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
               <Sparkles className="w-5 h-5" />
             </div>
-            <div>
-              <h2 className="text-lg sm:text-xl font-extrabold text-white">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-extrabold text-white truncate">
                 Cotización de Alquiler
               </h2>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400 mt-0.5">
@@ -164,7 +180,8 @@ export default function CartModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition-colors shrink-0"
+            title="Cerrar (Esc)"
           >
             <X className="w-5 h-5" />
           </button>

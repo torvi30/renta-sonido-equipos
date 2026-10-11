@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Plus, Trash2, Edit2, Package, Sparkles, X, Check, Cable, 
   Upload, Camera, Link as LinkIcon, Search, Star, Layers, ShieldCheck
@@ -58,6 +58,18 @@ export default function InventoryManager({
   const [comboPricingType, setComboPricingType] = useState('both'); // 'days' | 'hours' | 'both'
   const [comboPrice, setComboPrice] = useState('');
   const [comboDiscount, setComboDiscount] = useState('');
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (isModalOpen) setIsModalOpen(false);
+        if (isComboModalOpen) setIsComboModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isModalOpen, isComboModalOpen]);
   const [comboPricePerHour, setComboPricePerHour] = useState('');
   const [comboIncludedHours, setComboIncludedHours] = useState('4');
   const [comboExtraHourPrice, setComboExtraHourPrice] = useState('');
@@ -535,8 +547,14 @@ export default function InventoryManager({
 
       {/* MODAL CREAR / EDITAR EQUIPO INDIVIDUAL (Con subida de fotos desde Celular/PC) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-xl bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-xl bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          >
             
             {/* Header Modal */}
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828] shrink-0">
@@ -894,8 +912,14 @@ export default function InventoryManager({
 
       {/* MODAL CREAR / EDITAR COMBO DJ */}
       {isComboModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div 
+          onClick={() => setIsComboModalOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]"
+          >
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-amber-400" />

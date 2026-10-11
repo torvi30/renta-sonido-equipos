@@ -1,7 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckSquare, Square, Cable, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function ChecklistModal({ isOpen, onClose, booking, equipmentList, onSaveChecklist }) {
+  // Manejar tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !booking) return null;
 
   // Recopilar todos los cables y accesorios de los equipos del pedido
@@ -54,8 +64,14 @@ export default function ChecklistModal({ isOpen, onClose, booking, equipmentList
   const checkedCount = Object.values(checkedMap).filter(Boolean).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[85vh]"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">

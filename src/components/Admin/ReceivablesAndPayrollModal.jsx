@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, DollarSign, Users, Calendar, Phone, MapPin, 
   CheckCircle2, Clock, MessageSquare, Plus, Trash2, 
@@ -23,6 +23,16 @@ export default function ReceivablesAndPayrollModal({
   initialTab = 'receivables'
 }) {
   const [activeTab, setActiveTab] = useState(initialTab); // 'receivables' | 'payroll'
+
+  // Manejar Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
   const [searchReceivables, setSearchReceivables] = useState('');
   const [filterReceivables, setFilterReceivables] = useState('pending'); // 'pending' | 'all'
   
@@ -152,8 +162,14 @@ export default function ReceivablesAndPayrollModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0d121f] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#0d121f] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#111728] shrink-0">

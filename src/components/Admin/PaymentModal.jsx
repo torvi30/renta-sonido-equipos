@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, DollarSign, CreditCard, CheckCircle2 } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
 export default function PaymentModal({ isOpen, onClose, booking, onSavePayment }) {
+  // Manejar Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen || !booking) return null;
 
   // Manejar el monto como String para permitir borrar el 0 completamente sin que reaparezca
@@ -41,8 +51,14 @@ export default function PaymentModal({ isOpen, onClose, booking, onSavePayment }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in">
-      <div className="relative w-full max-w-md bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fade-in"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md bg-[#0f1422] border border-slate-800 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800 bg-[#121828]">
@@ -69,7 +85,7 @@ export default function PaymentModal({ isOpen, onClose, booking, onSavePayment }
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           
           <div className="bg-slate-900 p-3.5 rounded-2xl border border-slate-800 flex justify-between items-center">
             <span className="text-xs text-slate-400">Valor Total del Alquiler:</span>

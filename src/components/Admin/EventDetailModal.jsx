@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, Calendar, MapPin, Phone, MessageCircle, DollarSign, 
   Cable, FileText, CheckCircle2, Clock, Truck, ShieldCheck, 
@@ -22,6 +22,16 @@ export default function EventDetailModal({
 }) {
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [activeTab, setActiveTab] = useState('general'); // 'general', 'equipment', 'finances'
+
+  // Manejar tecla Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !booking) return null;
 
@@ -143,8 +153,14 @@ _Generado desde Sound & Event Control PRO_`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-[#0d121f] border border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[90vh] max-h-[820px] min-h-[580px] my-auto">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-4xl bg-[#0d121f] border border-slate-800/90 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[92vh] sm:h-[90vh] max-h-[820px] my-auto"
+      >
         
         {/* HEADER VIP */}
         <div className="p-4 sm:p-6 border-b border-slate-800/80 bg-gradient-to-r from-[#111728] via-[#0f1422] to-[#141b2e] flex-shrink-0">
