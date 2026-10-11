@@ -460,7 +460,7 @@ export default function App() {
   }, [cart, rentalMode, rentalDays]);
 
   return (
-    <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans overflow-x-clip w-full max-w-full">
       
       {/* VISTA 1: PANEL DE ADMINISTRADOR AUTENTICADO (Layout SaaS con Sidebar) */}
       {activeTab === 'admin' && isAdminAuthenticated ? (
@@ -811,7 +811,7 @@ export default function App() {
               </div>
 
               {/* RIGHT / SIDEBAR COLUMN: Live Sticky Quote & Cart Panel (Desktop) */}
-              <aside className="hidden lg:block lg:col-span-4 sticky top-24">
+              <aside className="hidden lg:block lg:col-span-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin pr-1">
                 <LiveQuoteSidebar
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
