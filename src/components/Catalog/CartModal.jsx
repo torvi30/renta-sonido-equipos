@@ -9,6 +9,9 @@ export default function CartModal({
   cart,
   selectedDate,
   rentalDays = 1,
+  rentalMode = 'days',
+  rentalHours = 4,
+  eventStartTime = '20:00',
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -31,8 +34,8 @@ export default function CartModal({
   };
 
   const endDate = calculateEndDate(selectedDate, rentalDays);
-  const dailyTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const totalAmount = dailyTotal * rentalDays;
+  const itemsTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalAmount = rentalMode === 'hours' ? itemsTotal : itemsTotal * rentalDays;
   const depositAmount = totalAmount * 0.5;
 
   const handleSendWhatsApp = (e) => {
@@ -62,15 +65,20 @@ export default function CartModal({
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
       eventDate: selectedDate,
-      endDate: endDate,
-      rentalDays: rentalDays,
+      endDate: rentalMode === 'hours' ? selectedDate : endDate,
+      rentalMode,
+      rentalHours: rentalMode === 'hours' ? rentalHours : null,
+      eventStartTime: rentalMode === 'hours' ? eventStartTime : null,
+      rentalDays: rentalMode === 'days' ? rentalDays : 1,
       eventLocation: eventLocation.trim() || 'Por confirmar',
       status: 'Pendiente',
       items: cart.map(item => ({
         equipmentId: item.id,
         name: item.name,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        rentalMode: item.rentalMode || rentalMode,
+        rentalHours: item.rentalHours || rentalHours
       })),
       totalAmount,
       depositAmount: 0,
@@ -91,7 +99,11 @@ export default function CartModal({
       clientName: clientName.trim(),
       clientPhone: clientPhone.trim(),
       eventDate: selectedDate,
-      endDate: endDate,
+      endDate: rentalMode === 'hours' ? selectedDate : endDate,
+      rentalMode,
+      rentalDays,
+      rentalHours,
+      eventStartTime,
       eventLocation: eventLocation.trim(),
       items: cart,
       totalAmount,
@@ -128,15 +140,26 @@ export default function CartModal({
               <h2 className="text-lg sm:text-xl font-extrabold text-white">
                 Cotización de Alquiler
               </h2>
-              <p className="text-xs text-slate-400">
-                Fecha: <span className="text-amber-400 font-bold">{formatDateFriendly(selectedDate)}</span>
-                {rentalDays > 1 && (
-                  <span className="text-cyan-400 font-semibold ml-1">
-                    al {formatDateFriendly(endDate)} ({rentalDays} días)
-                  </span>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+                {rentalMode === 'hours' ? (
+                  <>
+                    <span>Fecha: <strong className="text-amber-400 font-bold">{formatDateFriendly(selectedDate)}</strong></span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-cyan-400 font-bold bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+                      ⏱️ Show {rentalHours}h (Inicia {eventStartTime})
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span>Fecha: <strong className="text-amber-400 font-bold">{formatDateFriendly(selectedDate)}</strong></span>
+                    {rentalDays > 1 && (
+                      <span className="text-cyan-400 font-semibold ml-1">
+                        al {formatDateFriendly(endDate)} ({rentalDays} días)
+                      </span>
+                    )}
+                  </>
                 )}
-              </p>
-
+              </div>
             </div>
           </div>
           <button
@@ -203,7 +226,14 @@ export default function CartModal({
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white truncate">{item.name}</h4>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          <span>{formatCurrency(item.price)} / día</span>
+                          <span>
+                            {formatCurrency(item.price)} {item.unitLabel || (rentalMode === 'hours' ? `x ${rentalHours}h` : '/ día')}
+                          </span>
+                          {item.isDj && (
+                            <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                              🎧 Show DJ
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -246,19 +276,34 @@ export default function CartModal({
 
               {/* Total & Deposit Breakdown */}
               <div className="bg-gradient-to-br from-slate-900 to-[#12192c] p-4 rounded-2xl border border-slate-800 space-y-2">
-                {rentalDays > 1 && (
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Subtotal x Día:</span>
-                    <span>{formatCurrency(dailyTotal)}</span>
-                  </div>
+                {rentalMode === 'hours' ? (
+                  <>
+                    <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold">
+                      <span>Modalidad de Contratación:</span>
+                      <span className="bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
+                        ⏱️ Show / Evento x Horas ({rentalHours}h)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-400">
+                      <span>Hora de inicio programada:</span>
+                      <span className="text-white font-medium">{eventStartTime}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {rentalDays > 1 && (
+                      <div className="flex items-center justify-between text-xs text-slate-400">
+                        <span>Subtotal x Día:</span>
+                        <span>{formatCurrency(itemsTotal)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold">
+                      <span>Duración del Arriendo:</span>
+                      <span>{rentalDays} {rentalDays === 1 ? 'Día (24h)' : 'Días'}</span>
+                    </div>
+                  </>
                 )}
-                {rentalDays > 1 && (
-                  <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold">
-                    <span>Duración del Arriendo:</span>
-                    <span>{rentalDays} Días</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm text-slate-300">
+                <div className="flex items-center justify-between text-sm text-slate-300 pt-1 border-t border-slate-800/80">
                   <span>Valor Total Estimado:</span>
                   <span className="text-lg font-black text-white">{formatCurrency(totalAmount)}</span>
                 </div>

@@ -255,6 +255,10 @@ export const generateWhatsAppLink = ({
   clientPhone,
   eventDate,
   endDate,
+  rentalMode = 'days',
+  rentalDays = 1,
+  rentalHours = null,
+  eventStartTime = null,
   eventLocation,
   items,
   totalAmount,
@@ -269,14 +273,17 @@ export const generateWhatsAppLink = ({
   message += `👤 *Cliente:* ${clientName || 'Por confirmar'}\n`;
   message += `📱 *Teléfono:* ${clientPhone || 'No indicado'}\n`;
   
-  if (endDate && endDate !== eventDate) {
-    message += `📅 *Fechas del Evento:* Del ${formatDateFriendly(eventDate)} al ${formatDateFriendly(endDate)}\n`;
-  } else {
+  if (rentalMode === 'hours' && rentalHours) {
+    message += `⏱️ *Modalidad:* Evento x Horas (${rentalHours} Horas${eventStartTime ? ` | Horario aprox: ${eventStartTime}` : ''})\n`;
     message += `📅 *Fecha del Evento:* ${formatDateFriendly(eventDate)}\n`;
+  } else if (endDate && endDate !== eventDate) {
+    message += `📅 *Fechas del Evento:* Del ${formatDateFriendly(eventDate)} al ${formatDateFriendly(endDate)} (${rentalDays} Días)\n`;
+  } else {
+    message += `📅 *Fecha del Evento:* ${formatDateFriendly(eventDate)} (1 Día)\n`;
   }
 
   if (eventLocation) message += `📍 *Lugar / Locación:* ${eventLocation}\n`;
-  message += `\n📦 *EQUIPOS SELECCIONADOS:*\n`;
+  message += `\n📦 *EQUIPOS & SERVICIOS SELECCIONADOS:*\n`;
 
   items.forEach((item, index) => {
     message += `  ${index + 1}. ${item.quantity}x ${item.name} (${formatCurrency(item.price * item.quantity)})\n`;

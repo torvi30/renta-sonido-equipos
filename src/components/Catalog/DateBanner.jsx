@@ -9,7 +9,13 @@ export default function DateBanner({
   selectedDate, 
   setSelectedDate, 
   rentalDays = 1, 
-  setRentalDays 
+  setRentalDays,
+  rentalMode = 'days',
+  setRentalMode,
+  rentalHours = 4,
+  setRentalHours,
+  eventStartTime = '20:00',
+  setEventStartTime
 }) {
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
 
@@ -63,7 +69,7 @@ export default function DateBanner({
     setViewDate(new Date(Number(y), Number(m) - 1, 1));
   };
 
-  // Stepper de días
+  // Steppers
   const handleDecreaseDays = () => {
     if (rentalDays > 1) {
       setRentalDays(rentalDays - 1);
@@ -72,6 +78,18 @@ export default function DateBanner({
 
   const handleIncreaseDays = () => {
     setRentalDays(rentalDays + 1);
+  };
+
+  const handleDecreaseHours = () => {
+    if (rentalHours && rentalHours > 1 && setRentalHours) {
+      setRentalHours(rentalHours - 1);
+    }
+  };
+
+  const handleIncreaseHours = () => {
+    if (rentalHours && rentalHours < 24 && setRentalHours) {
+      setRentalHours(rentalHours + 1);
+    }
   };
 
   // Navegación en el calendario visual
@@ -98,7 +116,7 @@ export default function DateBanner({
 
   // Verifica si una fecha cae dentro del rango seleccionado
   const isDateInRange = (dateStr) => {
-    if (!selectedDate || rentalDays <= 1) return false;
+    if (!selectedDate || rentalDays <= 1 || rentalMode === 'hours') return false;
     return dateStr > selectedDate && dateStr <= endDate;
   };
 
@@ -109,31 +127,72 @@ export default function DateBanner({
       <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -left-10 -top-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
+      {/* Selector de Modalidad Superior: Días vs Horas */}
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-800/80">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5" />
+            Cotizador Inteligente en Vivo
+          </span>
+        </div>
+
+        {/* Píldoras para cambiar entre Días y Horas */}
+        {setRentalMode && (
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setRentalMode('days')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                rentalMode === 'days'
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 font-black'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>📅 Alquiler x Días</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRentalMode('hours')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                rentalMode === 'hours'
+                  ? 'bg-cyan-400 text-black shadow-md shadow-cyan-400/20 font-black'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Clock className="w-3.5 h-3.5" />
+              <span>⏱️ Evento x Horas (Show DJ)</span>
+            </button>
+          </div>
+        )}
+      </div>
+
       <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-5">
         
         {/* Info Textual Principal */}
         <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-            </span>
-            <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
-              Disponibilidad de Sonido en Vivo
-            </span>
-          </div>
-
           <h2 className="text-lg sm:text-2xl font-black text-white tracking-tight">
-            ¿Para qué fecha necesitas los equipos de sonido?
+            {rentalMode === 'hours' 
+              ? '¿Cuántas horas necesitas el show de DJ y los equipos?' 
+              : '¿Para qué fecha necesitas los equipos de sonido?'}
           </h2>
 
           <div className="flex items-center gap-2 flex-wrap text-xs sm:text-sm text-slate-300">
-            <span>Mostrando stock para:</span>
-            <strong className="text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-lg border border-amber-500/30">
-              {rentalDays === 1 
-                ? formatDateFriendly(selectedDate)
-                : `${formatDateFriendly(selectedDate)} hasta ${formatDateFriendly(endDate)} (${rentalDays} Días)`}
+            <span>Configuración activa:</span>
+            <strong className={`px-2.5 py-0.5 rounded-lg border ${
+              rentalMode === 'hours'
+                ? 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+                : 'text-amber-400 bg-amber-500/10 border-amber-500/30'
+            }`}>
+              {rentalMode === 'hours'
+                ? `📅 ${formatDateFriendly(selectedDate)} | ⏱️ ${rentalHours} Horas (${eventStartTime || '20:00'} aprox)`
+                : rentalDays === 1 
+                  ? `📅 ${formatDateFriendly(selectedDate)} (1 Día completo)`
+                  : `📅 ${formatDateFriendly(selectedDate)} hasta ${formatDateFriendly(endDate)} (${rentalDays} Días)`}
             </strong>
           </div>
         </div>
@@ -162,54 +221,97 @@ export default function DateBanner({
             </span>
           </button>
 
-          {/* Stepper Selector de Días de Alquiler */}
-          <div className="flex items-center justify-between gap-3 bg-slate-950/90 border border-slate-800 px-3.5 py-2.5 rounded-2xl shadow-lg">
-            <div className="flex flex-col min-w-[70px]">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
-                <Clock className="w-3 h-3 text-cyan-400" />
-                Duración
-              </span>
-              <span className="text-xs sm:text-sm font-black text-amber-400">
-                {rentalDays} {rentalDays === 1 ? 'Día' : 'Días'}
-              </span>
+          {/* Stepper Selector de Días u Horas */}
+          {rentalMode === 'hours' ? (
+            /* CONTROL DE HORAS */
+            <div className="flex items-center justify-between gap-3 bg-slate-950/90 border border-cyan-500/40 px-3.5 py-2.5 rounded-2xl shadow-lg">
+              <div className="flex flex-col min-w-[70px]">
+                <span className="text-[10px] uppercase font-bold text-cyan-400 tracking-wider flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-cyan-400" />
+                  Horas Show
+                </span>
+                <span className="text-xs sm:text-sm font-black text-cyan-300">
+                  {rentalHours} Horas
+                </span>
+              </div>
+
+              {/* Botones de + y - para Horas */}
+              <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700">
+                <button
+                  type="button"
+                  onClick={handleDecreaseHours}
+                  disabled={rentalHours <= 1}
+                  title="Disminuir horas"
+                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-30 text-white flex items-center justify-center font-bold text-xs transition-all"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+
+                <span className="w-8 text-center font-black text-xs text-cyan-300">
+                  {rentalHours}h
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleIncreaseHours}
+                  disabled={rentalHours >= 24}
+                  title="Aumentar horas"
+                  className="w-7 h-7 rounded-lg bg-cyan-400 hover:bg-cyan-300 active:scale-95 text-black flex items-center justify-center font-black text-xs transition-all shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
+          ) : (
+            /* CONTROL DE DÍAS */
+            <div className="flex items-center justify-between gap-3 bg-slate-950/90 border border-slate-800 px-3.5 py-2.5 rounded-2xl shadow-lg">
+              <div className="flex flex-col min-w-[70px]">
+                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1">
+                  <Clock className="w-3 h-3 text-cyan-400" />
+                  Duración
+                </span>
+                <span className="text-xs sm:text-sm font-black text-amber-400">
+                  {rentalDays} {rentalDays === 1 ? 'Día' : 'Días'}
+                </span>
+              </div>
 
-            {/* Botones de + y - para facilitar días */}
-            <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700">
-              <button
-                type="button"
-                onClick={handleDecreaseDays}
-                disabled={rentalDays <= 1}
-                title="Disminuir días"
-                className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-30 disabled:hover:bg-slate-800 text-white flex items-center justify-center font-bold text-xs transition-all"
-              >
-                <Minus className="w-3.5 h-3.5" />
-              </button>
+              {/* Botones de + y - para facilitar días */}
+              <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700">
+                <button
+                  type="button"
+                  onClick={handleDecreaseDays}
+                  disabled={rentalDays <= 1}
+                  title="Disminuir días"
+                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-30 disabled:hover:bg-slate-800 text-white flex items-center justify-center font-bold text-xs transition-all"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
 
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={rentalDays}
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  if (!isNaN(val) && val >= 1) {
-                    setRentalDays(val);
-                  }
-                }}
-                className="w-10 bg-transparent text-center font-black text-xs text-white focus:outline-none"
-              />
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={rentalDays}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val) && val >= 1) {
+                      setRentalDays(val);
+                    }
+                  }}
+                  className="w-10 bg-transparent text-center font-black text-xs text-white focus:outline-none"
+                />
 
-              <button
-                type="button"
-                onClick={handleIncreaseDays}
-                title="Aumentar días"
-                className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-black flex items-center justify-center font-black text-xs transition-all shadow-sm"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+                <button
+                  type="button"
+                  onClick={handleIncreaseDays}
+                  title="Aumentar días"
+                  className="w-7 h-7 rounded-lg bg-amber-500 hover:bg-amber-400 active:scale-95 text-black flex items-center justify-center font-black text-xs transition-all shadow-sm"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 
@@ -218,27 +320,66 @@ export default function DateBanner({
       {/* Chips Rápidos de Duración Común */}
       <div className="relative z-10 mt-3 pt-3 border-t border-slate-800/80 flex items-center gap-2 overflow-x-auto scrollbar-none text-xs">
         <span className="text-[11px] font-bold text-slate-500 shrink-0">
-          Duración rápida:
+          {rentalMode === 'hours' ? 'Horas recomendadas:' : 'Duración rápida:'}
         </span>
-        {[
-          { days: 1, label: '1 Día (Fiesta)' },
-          { days: 2, label: '2 Días (Fin de Semana)' },
-          { days: 3, label: '3 Días (Puente)' },
-          { days: 5, label: '5 Días' },
-          { days: 7, label: '7 Días (Semana)' }
-        ].map(item => (
-          <button
-            key={item.days}
-            onClick={() => setRentalDays(item.days)}
-            className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
-              rentalDays === item.days
-                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
-                : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
+        
+        {rentalMode === 'hours' ? (
+          /* Chips para Horas */
+          <>
+            {[
+              { hours: 2, label: '2 Horas (Básico)' },
+              { hours: 4, label: '4 Horas (Recomendado DJ)' },
+              { hours: 6, label: '6 Horas (Fiesta Total)' },
+              { hours: 8, label: '8 Horas (Toda la Noche)' }
+            ].map(item => (
+              <button
+                key={item.hours}
+                onClick={() => setRentalHours && setRentalHours(item.hours)}
+                className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
+                  rentalHours === item.hours
+                    ? 'bg-cyan-400 text-black shadow-md shadow-cyan-400/20'
+                    : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+
+            {/* Selector de Horario */}
+            {setEventStartTime && (
+              <div className="ml-auto flex items-center gap-1.5 shrink-0 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
+                <span className="text-[10px] text-slate-400 font-bold">Hora inicio:</span>
+                <input
+                  type="time"
+                  value={eventStartTime}
+                  onChange={(e) => setEventStartTime(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 text-cyan-300 font-bold text-[11px] px-1.5 py-0.5 rounded-lg focus:outline-none"
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          /* Chips para Días */
+          [
+            { days: 1, label: '1 Día (Fiesta)' },
+            { days: 2, label: '2 Días (Fin de Semana)' },
+            { days: 3, label: '3 Días (Puente)' },
+            { days: 5, label: '5 Días' },
+            { days: 7, label: '7 Días (Semana)' }
+          ].map(item => (
+            <button
+              key={item.days}
+              onClick={() => setRentalDays(item.days)}
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold whitespace-nowrap transition-all ${
+                rentalDays === item.days
+                  ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20'
+                  : 'bg-slate-900/90 text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))
+        )}
       </div>
 
       {/* ========================================================= */}

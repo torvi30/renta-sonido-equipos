@@ -7,13 +7,56 @@ export default function EquipmentCard({
   availability, 
   cartItem, 
   onAddToCart, 
-  onUpdateCartQuantity 
+  onUpdateCartQuantity,
+  rentalMode = 'days',
+  rentalHours = 4
 }) {
   const [showIncludes, setShowIncludes] = useState(false);
 
   const isAvailable = availability ? availability.isAvailable : equipment.totalStock > 0;
   const availableCount = availability ? availability.availableStock : equipment.totalStock;
   const inCartQty = cartItem ? cartItem.quantity : 0;
+
+  // Cálculo de precio según modalidad (Horas vs Días)
+  let displayPrice = equipment.pricePerDay || 0;
+  let priceSubtitle = '/ día';
+  let priceModeBadge = null;
+
+  if (rentalMode === 'hours') {
+    if (equipment.pricingType === 'hours' || equipment.pricePerHour) {
+      const effectiveHours = Math.max(rentalHours, equipment.minHours || 1);
+      const hourlyRate = equipment.pricePerHour || Math.round(equipment.pricePerDay / 8);
+      displayPrice = hourlyRate * effectiveHours;
+      priceSubtitle = `x ${rentalHours} horas`;
+      priceModeBadge = (
+        <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 block w-fit mb-0.5">
+          ⏱️ {formatCurrency(hourlyRate)}/hr {equipment.minHours && rentalHours < equipment.minHours ? `(Mín. ${equipment.minHours}h)` : ''}
+        </span>
+      );
+    } else {
+      displayPrice = equipment.pricePerDay;
+      priceSubtitle = '/ evento 24h';
+      priceModeBadge = (
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 block w-fit mb-0.5">
+          📅 Tarifa Día Completo
+        </span>
+      );
+    }
+  } else {
+    displayPrice = equipment.pricePerDay;
+    priceSubtitle = '/ día';
+    if (equipment.pricePerHour) {
+      priceModeBadge = (
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800 block w-fit mb-0.5">
+          ⏱️ Opcional: {formatCurrency(equipment.pricePerHour)}/hr
+        </span>
+      );
+    }
+  }
+
+  const handleAdd = () => {
+    onAddToCart(equipment, { calculatedPrice: displayPrice, rentalMode, rentalHours });
+  };
 
   return (
     <div className="group relative flex flex-col justify-between rounded-2xl bg-[#111622] border border-slate-800/80 hover:border-amber-500/40 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-amber-500/5">
@@ -36,7 +79,12 @@ export default function EquipmentCard({
           <span className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur-md text-amber-400 border border-amber-500/30 rounded-lg">
             {equipment.category}
           </span>
-          {equipment.isPopular && (
+          {equipment.isDjService && (
+            <span className="px-2 py-1 text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg shadow-md flex items-center gap-1">
+              <span>🎧 Show DJ</span>
+            </span>
+          )}
+          {equipment.isPopular && !equipment.isDjService && (
             <span className="px-2 py-1 text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-500 to-amber-600 text-black rounded-lg shadow-md">
               Top Alquiler
             </span>
@@ -106,12 +154,15 @@ export default function EquipmentCard({
         {/* Price & Action Bottom */}
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
           <div>
-            <span className="text-[10px] uppercase font-bold text-slate-500 block">
-              Precio x Día / Evento
-            </span>
-            <span className="text-base sm:text-lg font-extrabold text-white">
-              {formatCurrency(equipment.pricePerDay)}
-            </span>
+            {priceModeBadge}
+            <div className="flex items-baseline gap-1">
+              <span className="text-base sm:text-lg font-extrabold text-white">
+                {formatCurrency(displayPrice)}
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {priceSubtitle}
+              </span>
+            </div>
           </div>
 
           <div>
@@ -147,7 +198,7 @@ export default function EquipmentCard({
               </div>
             ) : (
               <button
-                onClick={() => onAddToCart(equipment)}
+                onClick={handleAdd}
                 className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all transform active:scale-95"
               >
                 <Plus className="w-4 h-4" />

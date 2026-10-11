@@ -38,7 +38,11 @@ export default function InventoryManager({
   // Form states Equipo
   const [name, setName] = useState('');
   const [category, setCategory] = useState('Bafles y Bajos');
+  const [pricingType, setPricingType] = useState('days'); // 'days' | 'hours' | 'both'
   const [pricePerDay, setPricePerDay] = useState('');
+  const [pricePerHour, setPricePerHour] = useState('');
+  const [minHours, setMinHours] = useState('2');
+  const [isDjService, setIsDjService] = useState(false);
   const [totalStock, setTotalStock] = useState('2');
   const [imageUrl, setImageUrl] = useState('');
   const [description, setDescription] = useState('');
@@ -51,8 +55,13 @@ export default function InventoryManager({
   const [editingCombo, setEditingCombo] = useState(null);
   const [comboName, setComboName] = useState('');
   const [comboTag, setComboTag] = useState('Más Pedido');
+  const [comboPricingType, setComboPricingType] = useState('both'); // 'days' | 'hours' | 'both'
   const [comboPrice, setComboPrice] = useState('');
   const [comboDiscount, setComboDiscount] = useState('');
+  const [comboPricePerHour, setComboPricePerHour] = useState('');
+  const [comboIncludedHours, setComboIncludedHours] = useState('4');
+  const [comboExtraHourPrice, setComboExtraHourPrice] = useState('');
+  const [comboIsDj, setComboIsDj] = useState(false);
   const [comboDesc, setComboDesc] = useState('');
   const [comboItemsText, setComboItemsText] = useState('');
 
@@ -94,7 +103,11 @@ export default function InventoryManager({
     setEditingItem(null);
     setName('');
     setCategory('Bafles y Bajos');
+    setPricingType('days');
     setPricePerDay('');
+    setPricePerHour('');
+    setMinHours('2');
+    setIsDjService(false);
     setTotalStock('2');
     setImageUrl(EQUIPMENT_PRESETS[0].url);
     setDescription('');
@@ -108,7 +121,11 @@ export default function InventoryManager({
     setEditingItem(item);
     setName(item.name);
     setCategory(item.category);
-    setPricePerDay(item.pricePerDay);
+    setPricingType(item.pricingType || (item.pricePerHour ? 'both' : 'days'));
+    setPricePerDay(item.pricePerDay || '');
+    setPricePerHour(item.pricePerHour || '');
+    setMinHours(item.minHours || '2');
+    setIsDjService(Boolean(item.isDjService));
     setTotalStock(item.totalStock);
     setImageUrl(item.imageUrl || EQUIPMENT_PRESETS[0].url);
     setDescription(item.description || '');
@@ -124,7 +141,11 @@ export default function InventoryManager({
       id: editingItem ? editingItem.id : `eq-${Date.now()}`,
       name: name.trim(),
       category,
+      pricingType,
       pricePerDay: Number(pricePerDay) || 0,
+      pricePerHour: pricePerHour ? Number(pricePerHour) : null,
+      minHours: Number(minHours) || 2,
+      isDjService: Boolean(isDjService),
       totalStock: Math.max(1, Number(totalStock) || 1),
       imageUrl: imageUrl.trim() || EQUIPMENT_PRESETS[0].url,
       description: description.trim(),
@@ -147,8 +168,13 @@ export default function InventoryManager({
     setEditingCombo(null);
     setComboName('');
     setComboTag('Recomendado');
+    setComboPricingType('both');
     setComboPrice('');
     setComboDiscount('');
+    setComboPricePerHour('60000');
+    setComboIncludedHours('4');
+    setComboExtraHourPrice('40000');
+    setComboIsDj(true);
     setComboDesc('');
     setComboItemsText('2 Cabinas JBL 15 pulgadas, Consola Pioneer DJ, Barra Luces LED');
     setIsComboModalOpen(true);
@@ -158,8 +184,13 @@ export default function InventoryManager({
     setEditingCombo(combo);
     setComboName(combo.name);
     setComboTag(combo.tag || 'Combo Pro');
-    setComboPrice(combo.pricePerDay);
+    setComboPricingType(combo.pricingType || (combo.pricePerHour ? 'both' : 'days'));
+    setComboPrice(combo.pricePerDay || '');
     setComboDiscount(combo.discountPrice || '');
+    setComboPricePerHour(combo.pricePerHour || '');
+    setComboIncludedHours(combo.includedHours || '4');
+    setComboExtraHourPrice(combo.extraHourPrice || '');
+    setComboIsDj(Boolean(combo.isDjCombo));
     setComboDesc(combo.description || '');
     setComboItemsText(combo.items ? combo.items.map(i => i.name).join(', ') : '');
     setIsComboModalOpen(true);
@@ -171,8 +202,13 @@ export default function InventoryManager({
       id: editingCombo ? editingCombo.id : `combo-${Date.now()}`,
       name: comboName.trim(),
       tag: comboTag.trim(),
+      pricingType: comboPricingType,
       pricePerDay: Number(comboPrice) || 0,
       discountPrice: comboDiscount ? Number(comboDiscount) : null,
+      pricePerHour: comboPricePerHour ? Number(comboPricePerHour) : null,
+      includedHours: Number(comboIncludedHours) || 4,
+      extraHourPrice: comboExtraHourPrice ? Number(comboExtraHourPrice) : null,
+      isDjCombo: Boolean(comboIsDj),
       description: comboDesc.trim(),
       items: comboItemsText.split(',').map(s => ({
         equipmentId: 'eq-custom',
@@ -305,15 +341,31 @@ export default function InventoryManager({
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                          {item.category}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                            {item.category}
+                          </span>
+                          {item.isDjService && (
+                            <span className="text-[10px] font-black uppercase text-purple-300 bg-purple-500/15 px-1.5 py-0.5 rounded border border-purple-500/30">
+                              🎧 Show DJ
+                            </span>
+                          )}
+                        </div>
                         <h4 className="font-extrabold text-white text-sm mt-1 truncate" title={item.name}>
                           {item.name}
                         </h4>
-                        <p className="text-emerald-400 font-extrabold text-xs mt-0.5">
-                          {formatCurrency(item.pricePerDay)} <span className="text-slate-500 font-normal">/día</span>
-                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          {item.pricePerDay > 0 && (
+                            <span className="text-emerald-400 font-extrabold text-xs">
+                              {formatCurrency(item.pricePerDay)} <span className="text-slate-500 font-normal">/día</span>
+                            </span>
+                          )}
+                          {item.pricePerHour > 0 && (
+                            <span className="text-cyan-400 font-bold bg-cyan-500/10 px-1.5 py-0.5 rounded text-[10px] border border-cyan-500/20">
+                              ⏱️ {formatCurrency(item.pricePerHour)}/hr {item.minHours ? `(min ${item.minHours}h)` : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -671,31 +723,110 @@ export default function InventoryManager({
                 </div>
               </div>
 
-              {/* Precio y Destacado */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Precio Alquiler x Día ($ COP) *</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    placeholder="Ej. 80000"
-                    value={pricePerDay}
-                    onChange={(e) => setPricePerDay(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-emerald-400 font-extrabold focus:outline-none focus:border-amber-500/50"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-5">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+              {/* Modalidad de Cobro: Horas, Días o Ambos */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider">
+                    Modalidad de Cobro / Alquiler *
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
                     <input
                       type="checkbox"
-                      checked={isPopular}
-                      onChange={(e) => setIsPopular(e.target.checked)}
-                      className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
+                      checked={isDjService}
+                      onChange={(e) => setIsDjService(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-purple-500 bg-slate-900 border-slate-700"
                     />
-                    <span>⭐ Marcar como Destacado</span>
+                    <span>🎧 Es Servicio de DJ / Personal</span>
                   </label>
+                </div>
+
+                {/* Selector de Píldoras */}
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'days', label: '📅 Solo x Día', desc: 'Tarifa diaria 24h' },
+                    { id: 'hours', label: '⏱️ Solo x Horas', desc: 'Para DJ o horas' },
+                    { id: 'both', label: '🔀 Horas o Días', desc: 'Cliente elige' }
+                  ].map(mode => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setPricingType(mode.id)}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        pricingType === mode.id
+                          ? 'bg-amber-500 text-black border-amber-400 font-extrabold shadow-md shadow-amber-500/20'
+                          : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold">{mode.label}</span>
+                      <span className={`block text-[10px] mt-0.5 ${pricingType === mode.id ? 'text-black/80 font-bold' : 'text-slate-500'}`}>{mode.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Inputs de Precios Dinámicos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {(pricingType === 'days' || pricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio Alquiler x Día ($ COP) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required={pricingType === 'days'}
+                        placeholder="Ej. 80000"
+                        value={pricePerDay}
+                        onChange={(e) => setPricePerDay(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-emerald-400 font-extrabold focus:outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                  )}
+
+                  {(pricingType === 'hours' || pricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio Alquiler x Hora ($ COP) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required={pricingType === 'hours'}
+                        placeholder="Ej. 35000"
+                        value={pricePerHour}
+                        onChange={(e) => setPricePerHour(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-cyan-400 font-extrabold focus:outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                  )}
+
+                  {(pricingType === 'hours' || pricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Mínimo de Horas a Contratar
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        placeholder="Ej. 2 o 4 horas"
+                        value={minHours}
+                        onChange={(e) => setMinHours(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-amber-500/50"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-2 sm:pt-6">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-300">
+                      <input
+                        type="checkbox"
+                        checked={isPopular}
+                        onChange={(e) => setIsPopular(e.target.checked)}
+                        className="w-4 h-4 rounded text-amber-500 bg-slate-900 border-slate-700"
+                      />
+                      <span>⭐ Marcar como Destacado</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -793,28 +924,138 @@ export default function InventoryManager({
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Etiqueta Destacada</label>
-                  <input
-                    type="text"
-                    placeholder="Ej. Más Pedido, Descuento 20%"
-                    value={comboTag}
-                    onChange={(e) => setComboTag(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
-                  />
+              {/* Modalidad del Combo */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-amber-400 uppercase tracking-wider">
+                    Modalidad del Paquete / Combo *
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-purple-300 bg-purple-500/10 px-2.5 py-1 rounded-lg border border-purple-500/20">
+                    <input
+                      type="checkbox"
+                      checked={comboIsDj}
+                      onChange={(e) => setComboIsDj(e.target.checked)}
+                      className="w-3.5 h-3.5 rounded text-purple-500 bg-slate-900 border-slate-700"
+                    />
+                    <span>🎧 Incluye Show de DJ en Vivo</span>
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Precio del Combo ($ COP) *</label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    placeholder="Ej. 280000"
-                    value={comboPrice}
-                    onChange={(e) => setComboPrice(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-400 font-extrabold focus:outline-none"
-                  />
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'days', label: '📅 Solo Día', desc: 'Tarifa completa 24h' },
+                    { id: 'hours', label: '⏱️ Solo Horas', desc: 'Show DJ 4h o 6h' },
+                    { id: 'both', label: '🔀 Horas o Días', desc: 'Ambas opciones' }
+                  ].map(mode => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setComboPricingType(mode.id)}
+                      className={`p-2.5 rounded-xl border text-center transition-all ${
+                        comboPricingType === mode.id
+                          ? 'bg-amber-500 text-black border-amber-400 font-extrabold shadow-md shadow-amber-500/20'
+                          : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+                      }`}
+                    >
+                      <span className="block text-xs font-bold">{mode.label}</span>
+                      <span className={`block text-[10px] mt-0.5 ${comboPricingType === mode.id ? 'text-black/80 font-bold' : 'text-slate-500'}`}>{mode.desc}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Etiqueta Destacada</label>
+                    <input
+                      type="text"
+                      placeholder="Ej. Más Pedido, Descuento 20%"
+                      value={comboTag}
+                      onChange={(e) => setComboTag(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                    />
+                  </div>
+
+                  {(comboPricingType === 'days' || comboPricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio Día Completo ($ COP) *
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        required={comboPricingType === 'days'}
+                        placeholder="Ej. 290000"
+                        value={comboPrice}
+                        onChange={(e) => setComboPrice(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-emerald-400 font-extrabold focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {(comboPricingType === 'days' || comboPricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio con Descuento ($ COP)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 250000 (Opcional)"
+                        value={comboDiscount}
+                        onChange={(e) => setComboDiscount(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-amber-400 font-extrabold focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {(comboPricingType === 'hours' || comboPricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Horas Base del Paquete
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="24"
+                        placeholder="Ej. 4 horas"
+                        value={comboIncludedHours}
+                        onChange={(e) => setComboIncludedHours(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {(comboPricingType === 'hours' || comboPricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio del Paquete x Horas ($ COP)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 250000"
+                        value={comboPricePerHour}
+                        onChange={(e) => setComboPricePerHour(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs sm:text-sm text-cyan-400 font-extrabold focus:outline-none"
+                      />
+                    </div>
+                  )}
+
+                  {(comboPricingType === 'hours' || comboPricingType === 'both') && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        Precio Hora Extra Adicional ($ COP)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Ej. 40000"
+                        value={comboExtraHourPrice}
+                        onChange={(e) => setComboExtraHourPrice(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

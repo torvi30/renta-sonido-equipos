@@ -2,8 +2,46 @@ import React, { useState } from 'react';
 import { Package, Sparkles, CheckCircle2, ChevronDown, ChevronUp, Plus, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
-export default function ComboCard({ combo, onAddComboToCart }) {
+export default function ComboCard({ 
+  combo, 
+  onAddComboToCart,
+  rentalMode = 'days',
+  rentalHours = 4
+}) {
   const [expanded, setExpanded] = useState(false);
+
+  // Cálculo de precio de Combo según modalidad
+  let displayPrice = combo.discountPrice || combo.pricePerDay;
+  let priceSubtitle = '/ día';
+  let modeBadge = null;
+
+  if (rentalMode === 'hours') {
+    const baseHours = combo.includedHours || 4;
+    const extraHours = Math.max(0, rentalHours - baseHours);
+    const baseCost = combo.pricePerHour ? (combo.pricePerHour * baseHours) : (combo.discountPrice || combo.pricePerDay);
+    const extraCost = extraHours * (combo.extraHourPrice || combo.pricePerHour || 40000);
+    displayPrice = baseCost + extraCost;
+    priceSubtitle = `x ${rentalHours} horas`;
+    modeBadge = (
+      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 block w-fit mb-1">
+        ⏱️ Paquete {rentalHours}h {extraHours > 0 ? `(${baseHours}h base + ${extraHours}h extra)` : `(${baseHours}h incluidas)`}
+      </span>
+    );
+  } else {
+    displayPrice = combo.discountPrice || combo.pricePerDay;
+    priceSubtitle = '/ día';
+    if (combo.pricePerHour || combo.includedHours) {
+      modeBadge = (
+        <span className="text-[10px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 block w-fit mb-1">
+          ⏱️ Opcional x Horas (Show DJ)
+        </span>
+      );
+    }
+  }
+
+  const handleAdd = () => {
+    onAddComboToCart(combo, { calculatedPrice: displayPrice, rentalMode, rentalHours });
+  };
 
   return (
     <div className="relative rounded-2xl bg-gradient-to-b from-[#141b2a] to-[#0f1422] border-2 border-amber-500/30 hover:border-amber-500/60 transition-all duration-300 p-5 sm:p-6 shadow-xl flex flex-col justify-between overflow-hidden">
@@ -11,7 +49,7 @@ export default function ComboCard({ combo, onAddComboToCart }) {
       {/* Decorative Neon Ribbon */}
       <div className="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-amber-600 text-black font-extrabold text-[10px] sm:text-xs uppercase px-3 py-1 rounded-bl-xl shadow-md flex items-center gap-1">
         <Sparkles className="w-3.5 h-3.5" />
-        <span>{combo.tag || 'Combo Pro'}</span>
+        <span>{combo.isDjCombo ? '🎧 Pack Show DJ' : (combo.tag || 'Combo Pro')}</span>
       </div>
 
       <div>
@@ -80,8 +118,9 @@ export default function ComboCard({ combo, onAddComboToCart }) {
       {/* Pricing and Action */}
       <div className="mt-6 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
         <div>
-          {combo.discountPrice && (
-            <div className="flex items-center gap-2">
+          {modeBadge}
+          {rentalMode === 'days' && combo.discountPrice && (
+            <div className="flex items-center gap-2 mb-0.5">
               <span className="text-xs text-slate-400 line-through">
                 {formatCurrency(combo.pricePerDay)}
               </span>
@@ -91,17 +130,17 @@ export default function ComboCard({ combo, onAddComboToCart }) {
             </div>
           )}
           <div className="text-xl sm:text-2xl font-black text-white">
-            {formatCurrency(combo.discountPrice || combo.pricePerDay)}
-            <span className="text-xs font-normal text-slate-400 ml-1">/ día</span>
+            {formatCurrency(displayPrice)}
+            <span className="text-xs font-normal text-slate-400 ml-1">{priceSubtitle}</span>
           </div>
         </div>
 
         <button
-          onClick={() => onAddComboToCart(combo)}
+          onClick={handleAdd}
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all transform active:scale-95"
         >
           <Plus className="w-4 h-4" />
-          <span>Agregar Combo Completo</span>
+          <span>Agregar Combo</span>
         </button>
       </div>
 

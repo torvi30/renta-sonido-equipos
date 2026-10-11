@@ -95,6 +95,9 @@ export default function App() {
 
   const [selectedDate, setSelectedDate] = useState(getTomorrowDate);
   const [rentalDays, setRentalDays] = useState(1);
+  const [rentalMode, setRentalMode] = useState('days'); // 'days' | 'hours'
+  const [rentalHours, setRentalHours] = useState(4);
+  const [eventStartTime, setEventStartTime] = useState('20:00');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [sortBy, setSortBy] = useState('popular');
@@ -221,7 +224,17 @@ export default function App() {
   }, [activeTab]);
 
   // Cart operations
-  const handleAddToCart = (equipment) => {
+  const handleAddToCart = (equipment, options = null) => {
+    const calcPrice = options?.calculatedPrice !== undefined 
+      ? options.calculatedPrice 
+      : (rentalMode === 'hours' && (equipment.pricingType === 'hours' || equipment.pricePerHour)
+          ? (equipment.pricePerHour || Math.round(equipment.pricePerDay / 8)) * Math.max(rentalHours, equipment.minHours || 1)
+          : equipment.pricePerDay);
+
+    const mode = options?.rentalMode || rentalMode;
+    const hours = options?.rentalHours || rentalHours;
+    const isDj = Boolean(equipment.isDjService || equipment.category === 'DJs y Controladores' || equipment.id === 'eq-dj');
+
     setCart(prev => {
       const exists = prev.find(item => item.id === equipment.id);
       if (exists) {
@@ -232,14 +245,34 @@ export default function App() {
       return [...prev, {
         id: equipment.id,
         name: equipment.name,
-        price: equipment.pricePerDay,
-        quantity: 1
+        price: calcPrice,
+        quantity: 1,
+        rentalMode: mode,
+        rentalHours: mode === 'hours' ? hours : null,
+        unitLabel: mode === 'hours' ? `x ${hours}h` : '/ día',
+        isDj
       }];
     });
     showToast(`🔊 Agregado: ${equipment.name}`);
   };
 
-  const handleAddComboToCart = (combo) => {
+  const handleAddComboToCart = (combo, options = null) => {
+    let calcPrice = options?.calculatedPrice;
+    if (calcPrice === undefined) {
+      if (rentalMode === 'hours') {
+        const baseHours = combo.includedHours || 4;
+        const extraHours = Math.max(0, rentalHours - baseHours);
+        const baseCost = combo.pricePerHour ? (combo.pricePerHour * baseHours) : (combo.discountPrice || combo.pricePerDay);
+        const extraCost = extraHours * (combo.extraHourPrice || combo.pricePerHour || 40000);
+        calcPrice = baseCost + extraCost;
+      } else {
+        calcPrice = combo.discountPrice || combo.pricePerDay;
+      }
+    }
+
+    const mode = options?.rentalMode || rentalMode;
+    const hours = options?.rentalHours || rentalHours;
+
     setCart(prev => {
       const exists = prev.find(item => item.id === combo.id);
       if (exists) {
@@ -250,9 +283,13 @@ export default function App() {
       return [...prev, {
         id: combo.id,
         name: combo.name,
-        price: combo.discountPrice || combo.pricePerDay,
+        price: calcPrice,
         quantity: 1,
-        isCombo: true
+        isCombo: true,
+        rentalMode: mode,
+        rentalHours: mode === 'hours' ? hours : null,
+        unitLabel: mode === 'hours' ? `x ${hours}h` : '/ día',
+        isDj: Boolean(combo.isDjCombo)
       }];
     });
     showToast(`🎁 Combo agregado: ${combo.name}`);
@@ -626,6 +663,12 @@ export default function App() {
               setSelectedDate={setSelectedDate}
               rentalDays={rentalDays}
               setRentalDays={setRentalDays}
+              rentalMode={rentalMode}
+              setRentalMode={setRentalMode}
+              rentalHours={rentalHours}
+              setRentalHours={setRentalHours}
+              eventStartTime={eventStartTime}
+              setEventStartTime={setEventStartTime}
             />
 
             {/* Category Filter Pills */}
@@ -693,6 +736,8 @@ export default function App() {
                       key={combo.id}
                       combo={combo}
                       onAddComboToCart={handleAddComboToCart}
+                      rentalMode={rentalMode}
+                      rentalHours={rentalHours}
                     />
                   ))}
                 </div>
@@ -731,6 +776,8 @@ export default function App() {
                         cartItem={cartMap[eq.id]}
                         onAddToCart={handleAddToCart}
                         onUpdateCartQuantity={handleUpdateCartQuantity}
+                        rentalMode={rentalMode}
+                        rentalHours={rentalHours}
                       />
                     ))}
                   </div>
@@ -827,6 +874,9 @@ export default function App() {
         cart={cart}
         selectedDate={selectedDate}
         rentalDays={rentalDays}
+        rentalMode={rentalMode}
+        rentalHours={rentalHours}
+        eventStartTime={eventStartTime}
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveFromCart}
         onClearCart={handleClearCart}
