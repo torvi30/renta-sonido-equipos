@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Plus, Minus, Check, Cable, Zap, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
-export default function EquipmentCard({ 
+function EquipmentCard({ 
   equipment, 
   availability, 
   cartItem, 
@@ -68,6 +68,7 @@ export default function EquipmentCard({
           alt={equipment.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
           loading="lazy"
+          decoding="async"
           onError={(e) => {
             e.target.src = "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80";
           }}
@@ -212,3 +213,5 @@ export default function EquipmentCard({
     </div>
   );
 }
+
+export default memo(EquipmentCard);

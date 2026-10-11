@@ -1,13 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { 
   Calendar, Clock, ShoppingBag, Trash2, Plus, Minus, 
-  Sparkles, Zap, Flame, PartyPopper, CheckCircle2, 
-  ChevronLeft, ChevronRight, X, ArrowRight, MessageSquare,
-  ShieldCheck, Volume2, Music, Package
+  ChevronLeft, ChevronRight, X, MessageSquare, Volume2
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 
-export default function LiveQuoteSidebar({
+function LiveQuoteSidebar({
   selectedDate,
   setSelectedDate,
   rentalDays = 1,
@@ -594,3 +592,5 @@ export default function LiveQuoteSidebar({
     </div>
   );
 }
+
+export default memo(LiveQuoteSidebar);

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { 
   Camera, Sparkles, MessageCircle, X, Maximize2, 
   ChevronLeft, ChevronRight, Eye, ShieldCheck, Flame
 } from 'lucide-react';
 
-export default function EventGallery({ gallery = [], settings = {} }) {
+function EventGallery({ gallery = [], settings = {} }) {
   const [selectedTag, setSelectedTag] = useState('Todos');
   const [activeIndex, setActiveIndex] = useState(null);
 
@@ -107,6 +107,7 @@ export default function EventGallery({ gallery = [], settings = {} }) {
               alt={item.title || 'Montaje de sonido'}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 opacity-90 group-hover:opacity-100"
               loading="lazy"
+              decoding="async"
             />
             
             {/* Gradiente Oscuro */}
@@ -232,3 +233,5 @@ export default function EventGallery({ gallery = [], settings = {} }) {
     </section>
   );
 }
+
+export default memo(EventGallery);

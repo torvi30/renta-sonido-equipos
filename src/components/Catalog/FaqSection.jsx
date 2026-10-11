@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { HelpCircle, ChevronDown, ChevronUp, MessageCircle, MapPin, Sparkles } from 'lucide-react';
 
-
-export default function FaqSection({ settings }) {
+function FaqSection({ settings }) {
   const [openIndex, setOpenIndex] = useState(null);
 
   if (!settings.showFaqSection || !settings.faqs || settings.faqs.length === 0) {
@@ -83,3 +82,5 @@ export default function FaqSection({ settings }) {
     </section>
   );
 }
+
+export default memo(FaqSection);

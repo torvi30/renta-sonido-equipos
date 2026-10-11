@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { Package, Sparkles, CheckCircle2, ChevronDown, ChevronUp, Plus, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
-export default function ComboCard({ 
+function ComboCard({ 
   combo, 
   onAddComboToCart,
   rentalMode = 'days',
@@ -147,3 +147,5 @@ export default function ComboCard({
     </div>
   );
 }
+
+export default memo(ComboCard);

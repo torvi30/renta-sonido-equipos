@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
-import DateBanner from './components/Catalog/DateBanner';
 import LiveQuoteSidebar from './components/Catalog/LiveQuoteSidebar';
 import EquipmentCard from './components/Catalog/EquipmentCard';
 import ComboCard from './components/Catalog/ComboCard';
@@ -40,7 +39,7 @@ import {
 } from './services/storageService';
 import { CATEGORIES } from './data/initialData';
 import { 
-  Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, 
+  Sparkles, ShoppingBag, Volume2, 
   MapPin, Search, ArrowUpDown, Menu, Eye, LogOut,
   Calendar, Clock
 } from 'lucide-react';
@@ -226,8 +225,8 @@ export default function App() {
     };
   }, [activeTab]);
 
-  // Cart operations
-  const handleAddToCart = (equipment, options = null) => {
+  // Cart operations (memoized callbacks for performance)
+  const handleAddToCart = useCallback((equipment, options = null) => {
     const calcPrice = options?.calculatedPrice !== undefined 
       ? options.calculatedPrice 
       : (rentalMode === 'hours' && (equipment.pricingType === 'hours' || equipment.pricePerHour)
@@ -257,9 +256,9 @@ export default function App() {
       }];
     });
     showToast(`🔊 Agregado: ${equipment.name}`);
-  };
+  }, [rentalMode, rentalHours]);
 
-  const handleAddComboToCart = (combo, options = null) => {
+  const handleAddComboToCart = useCallback((combo, options = null) => {
     let calcPrice = options?.calculatedPrice;
     if (calcPrice === undefined) {
       if (rentalMode === 'hours') {
@@ -297,23 +296,23 @@ export default function App() {
     });
     showToast(`🎁 Combo agregado: ${combo.name}`);
     setIsCartOpen(true);
-  };
+  }, [rentalMode, rentalHours]);
 
-  const handleUpdateCartQuantity = (id, newQty) => {
+  const handleRemoveFromCart = useCallback((id) => {
+    setCart(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const handleUpdateCartQuantity = useCallback((id, newQty) => {
     if (newQty <= 0) {
       handleRemoveFromCart(id);
       return;
     }
     setCart(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
-  };
+  }, [handleRemoveFromCart]);
 
-  const handleRemoveFromCart = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
-  };
-
-  const handleClearCart = () => {
+  const handleClearCart = useCallback(() => {
     setCart([]);
-  };
+  }, []);
 
   // Booking operations
   const handleCreateBooking = (newBooking) => {
