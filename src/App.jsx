@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import DateBanner from './components/Catalog/DateBanner';
+import LiveQuoteSidebar from './components/Catalog/LiveQuoteSidebar';
 import EquipmentCard from './components/Catalog/EquipmentCard';
 import ComboCard from './components/Catalog/ComboCard';
 import CartModal from './components/Catalog/CartModal';
@@ -34,12 +35,14 @@ import {
   getStoredBookings, saveStoredBookings,
   getStoredRepairs, saveStoredRepairs,
   getStoredPayroll, saveStoredPayroll,
-  checkEquipmentAvailability, getStoredSettings, saveStoredSettings
+  checkEquipmentAvailability, getStoredSettings, saveStoredSettings,
+  formatCurrency, formatDateFriendly
 } from './services/storageService';
 import { CATEGORIES } from './data/initialData';
 import { 
   Sparkles, ShoppingBag, Music, Disc, Shield, Radio, Volume2, 
-  MapPin, Search, ArrowUpDown, Menu, Eye, LogOut 
+  MapPin, Search, ArrowUpDown, Menu, Eye, LogOut,
+  Calendar, Clock
 } from 'lucide-react';
 
 const InstagramIcon = ({ className = "w-4 h-4" }) => (
@@ -451,6 +454,11 @@ export default function App() {
 
   const cartTotalItems = useMemo(() => cart.reduce((sum, it) => sum + it.quantity, 0), [cart]);
 
+  const totalAmount = useMemo(() => {
+    const itemsTotal = cart.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+    return rentalMode === 'hours' ? itemsTotal : itemsTotal * rentalDays;
+  }, [cart, rentalMode, rentalDays]);
+
   return (
     <div className="min-h-screen bg-[#090c13] text-slate-100 flex flex-col font-sans overflow-x-hidden w-full max-w-full">
       
@@ -657,133 +665,173 @@ export default function App() {
               </div>
             </div>
 
-            {/* Date Picker Banner with real-time stock computation */}
-            <DateBanner
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              rentalDays={rentalDays}
-              setRentalDays={setRentalDays}
-              rentalMode={rentalMode}
-              setRentalMode={setRentalMode}
-              rentalHours={rentalHours}
-              setRentalHours={setRentalHours}
-              eventStartTime={eventStartTime}
-              setEventStartTime={setEventStartTime}
-            />
-
-            {/* Category Filter Pills */}
-            <div className="flex flex-wrap items-center gap-2 pb-2">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20 scale-102'
-                      : 'bg-[#111622] text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Search and Sort Filter Bar */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111622] p-3 sm:p-3.5 rounded-2xl border border-slate-800">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Buscar equipos por nombre o categoría (JBL, Pioneer, Luces, Humo...)"
-                  value={catalogSearch}
-                  onChange={(e) => setCatalogSearch(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/50"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <ArrowUpDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
-                >
-                  <option value="popular">Más Populares</option>
-                  <option value="price-low">Menor Precio</option>
-                  <option value="price-high">Mayor Precio</option>
-                </select>
-              </div>
-            </div>
-
-            {/* COMBOS SECTION (if 'Todos' or 'Combos y Paquetes' and no search filter) */}
-            {(selectedCategory === 'Todos' || selectedCategory === 'Combos y Paquetes') && !catalogSearch && (
-              <section id="combos" className="space-y-4 pt-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-amber-400" />
-                    <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                      Combos y Paquetes Prediseñados
-                    </h2>
+            {/* UNIFIED EXPERIENCE: Catalog (Left) + Sticky Live Quote Sidebar (Right) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              
+              {/* LEFT / MAIN COLUMN: Catalog Filters, Combos & Equipment */}
+              <div className="lg:col-span-8 space-y-6 min-w-0">
+                
+                {/* Compact Date Indicator for Mobile (< lg screens) */}
+                <div className="lg:hidden flex items-center justify-between gap-3 p-3.5 bg-gradient-to-r from-slate-900 via-[#101728] to-slate-900 rounded-2xl border border-amber-500/30 shadow-lg">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                        {rentalMode === 'hours' ? 'Show de DJ / Sonido' : 'Fecha y Días de Alquiler'}
+                      </span>
+                      <span className="text-xs font-black text-white truncate block">
+                        {formatDateFriendly(selectedDate)} • {rentalMode === 'hours' ? `${rentalHours}h Evento` : `${rentalDays} ${rentalDays === 1 ? 'Día' : 'Días'}`}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-xs text-slate-400 hidden sm:inline">
-                    Soluciones llave en mano con descuento
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCartOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs shrink-0 shadow-md shadow-amber-500/20 active:scale-95 transition-all"
+                  >
+                    Ajustar 📅
+                  </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {combosList.map(combo => (
-                    <ComboCard
-                      key={combo.id}
-                      combo={combo}
-                      onAddComboToCart={handleAddComboToCart}
-                      rentalMode={rentalMode}
-                      rentalHours={rentalHours}
-                    />
+                {/* Category Filter Pills */}
+                <div className="flex flex-wrap items-center gap-2 pb-1">
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
+                        selectedCategory === cat
+                          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20 scale-102'
+                          : 'bg-[#111622] text-slate-400 hover:text-white border border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      {cat}
+                    </button>
                   ))}
                 </div>
-              </section>
-            )}
 
-            {/* INDIVIDUAL EQUIPMENT GRID */}
-            {selectedCategory !== 'Combos y Paquetes' && (
-              <section id="equipos" className="space-y-4 pt-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
-                    Equipos Individuales
-                  </h2>
-                  <span className="text-xs text-slate-400">
-                    {filteredEquipment.length} {filteredEquipment.length === 1 ? 'equipo encontrado' : 'equipos encontrados'}
-                  </span>
+                {/* Search and Sort Filter Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#111622] p-3 sm:p-3.5 rounded-2xl border border-slate-800">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Buscar equipos por nombre o categoría (JBL, Pioneer, Luces, Humo...)"
+                      value={catalogSearch}
+                      onChange={(e) => setCatalogSearch(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-amber-500/50"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <ArrowUpDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-bold text-slate-200 focus:outline-none cursor-pointer"
+                    >
+                      <option value="popular">Más Populares</option>
+                      <option value="price-low">Menor Precio</option>
+                      <option value="price-high">Mayor Precio</option>
+                    </select>
+                  </div>
                 </div>
 
-                {filteredEquipment.length === 0 ? (
-                  <div className="text-center py-12 bg-[#111622] rounded-2xl border border-slate-800">
-                    <p className="text-slate-400 text-sm">No encontramos equipos que coincidan con "{catalogSearch}".</p>
-                    <button
-                      onClick={() => setCatalogSearch('')}
-                      className="mt-2 text-xs text-amber-400 font-bold hover:underline"
-                    >
-                      Limpiar búsqueda
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredEquipment.map(eq => (
-                      <EquipmentCard
-                        key={eq.id}
-                        equipment={eq}
-                        availability={availabilityMap[eq.id]}
-                        cartItem={cartMap[eq.id]}
-                        onAddToCart={handleAddToCart}
-                        onUpdateCartQuantity={handleUpdateCartQuantity}
-                        rentalMode={rentalMode}
-                        rentalHours={rentalHours}
-                      />
-                    ))}
-                  </div>
+                {/* COMBOS SECTION (if 'Todos' or 'Combos y Paquetes' and no search filter) */}
+                {(selectedCategory === 'Todos' || selectedCategory === 'Combos y Paquetes') && !catalogSearch && (
+                  <section id="combos" className="space-y-4 pt-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-amber-400" />
+                        <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                          Combos y Paquetes Prediseñados
+                        </h2>
+                      </div>
+                      <span className="text-xs text-slate-400 hidden sm:inline">
+                        Soluciones llave en mano con descuento
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {combosList.map(combo => (
+                        <ComboCard
+                          key={combo.id}
+                          combo={combo}
+                          onAddComboToCart={handleAddComboToCart}
+                          rentalMode={rentalMode}
+                          rentalHours={rentalHours}
+                        />
+                      ))}
+                    </div>
+                  </section>
                 )}
-              </section>
-            )}
+
+                {/* INDIVIDUAL EQUIPMENT GRID */}
+                {selectedCategory !== 'Combos y Paquetes' && (
+                  <section id="equipos" className="space-y-4 pt-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg sm:text-xl font-extrabold text-white tracking-tight">
+                        Equipos Individuales
+                      </h2>
+                      <span className="text-xs text-slate-400">
+                        {filteredEquipment.length} {filteredEquipment.length === 1 ? 'equipo encontrado' : 'equipos encontrados'}
+                      </span>
+                    </div>
+
+                    {filteredEquipment.length === 0 ? (
+                      <div className="text-center py-12 bg-[#111622] rounded-2xl border border-slate-800">
+                        <p className="text-slate-400 text-sm">No encontramos equipos que coincidan con "{catalogSearch}".</p>
+                        <button
+                          onClick={() => setCatalogSearch('')}
+                          className="mt-2 text-xs text-amber-400 font-bold hover:underline"
+                        >
+                          Limpiar búsqueda
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {filteredEquipment.map(eq => (
+                          <EquipmentCard
+                            key={eq.id}
+                            equipment={eq}
+                            availability={availabilityMap[eq.id]}
+                            cartItem={cartMap[eq.id]}
+                            onAddToCart={handleAddToCart}
+                            onUpdateCartQuantity={handleUpdateCartQuantity}
+                            rentalMode={rentalMode}
+                            rentalHours={rentalHours}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+              </div>
+
+              {/* RIGHT / SIDEBAR COLUMN: Live Sticky Quote & Cart Panel (Desktop) */}
+              <aside className="hidden lg:block lg:col-span-4 sticky top-20">
+                <LiveQuoteSidebar
+                  selectedDate={selectedDate}
+                  setSelectedDate={setSelectedDate}
+                  rentalDays={rentalDays}
+                  setRentalDays={setRentalDays}
+                  rentalMode={rentalMode}
+                  setRentalMode={setRentalMode}
+                  rentalHours={rentalHours}
+                  setRentalHours={setRentalHours}
+                  eventStartTime={eventStartTime}
+                  setEventStartTime={setEventStartTime}
+                  cart={cart}
+                  onUpdateQuantity={handleUpdateCartQuantity}
+                  onRemoveItem={handleRemoveFromCart}
+                  onClearCart={handleClearCart}
+                  onOpenCartModal={() => setIsCartOpen(true)}
+                />
+              </aside>
+
+            </div>
 
             {/* GALLERY PORTFOLIO SECTION */}
             <div id="galeria">
@@ -795,21 +843,28 @@ export default function App() {
               <FaqSection settings={settings} />
             </div>
 
-
-            {/* Floating Mobile Cart Action Bar */}
+            {/* Floating Mobile Cart Action Bar (< lg screens) */}
             {cartTotalItems > 0 && (
-              <div className="fixed bottom-4 left-4 right-4 z-40 sm:hidden">
+              <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden">
                 <button
                   onClick={() => setIsCartOpen(true)}
-                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-extrabold py-3.5 px-5 rounded-2xl shadow-2xl flex items-center justify-between shadow-emerald-950/80 animate-bounce"
-                  style={{ animationDuration: '3s' }}
+                  className="w-full bg-gradient-to-r from-emerald-500 via-emerald-400 to-teal-400 text-black font-black py-3.5 px-4 rounded-2xl shadow-2xl shadow-black/80 flex items-center justify-between border border-emerald-400/30 active:scale-98 transition-all"
                 >
-                  <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5" />
-                    <span>Ver Cotización ({cartTotalItems} equipos)</span>
+                  <div className="flex items-center gap-2.5 text-left min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-black/20 flex items-center justify-center shrink-0">
+                      <ShoppingBag className="w-4 h-4 text-black" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-black block leading-tight truncate">
+                        {cartTotalItems} {cartTotalItems === 1 ? 'Equipo' : 'Equipos'} • {formatCurrency(totalAmount)}
+                      </span>
+                      <span className="text-[10px] text-emerald-950 font-bold block truncate">
+                        {rentalMode === 'hours' ? `${rentalHours}h Show` : `${rentalDays} Días`} ({formatDateFriendly(selectedDate)})
+                      </span>
+                    </div>
                   </div>
-                  <span className="bg-black/80 text-emerald-400 px-3 py-1 rounded-xl text-xs font-black">
-                    Pedir x WhatsApp →
+                  <span className="bg-black text-emerald-400 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm shrink-0">
+                    Cotizar x WhatsApp →
                   </span>
                 </button>
               </div>
@@ -873,10 +928,15 @@ export default function App() {
         onClose={() => setIsCartOpen(false)}
         cart={cart}
         selectedDate={selectedDate}
+        setSelectedDate={setSelectedDate}
         rentalDays={rentalDays}
+        setRentalDays={setRentalDays}
         rentalMode={rentalMode}
+        setRentalMode={setRentalMode}
         rentalHours={rentalHours}
+        setRentalHours={setRentalHours}
         eventStartTime={eventStartTime}
+        setEventStartTime={setEventStartTime}
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveFromCart}
         onClearCart={handleClearCart}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trash2, Plus, Minus, MessageSquare, Send, Calendar, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
+import { X, Trash2, Plus, Minus, MessageSquare, Send, Calendar, Clock, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, generateWhatsAppLink } from '../../services/storageService';
 import { showAlert } from '../../services/alertService';
 
@@ -8,10 +8,15 @@ export default function CartModal({
   onClose,
   cart,
   selectedDate,
+  setSelectedDate,
   rentalDays = 1,
+  setRentalDays,
   rentalMode = 'days',
+  setRentalMode,
   rentalHours = 4,
+  setRentalHours,
   eventStartTime = '20:00',
+  setEventStartTime,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -23,6 +28,7 @@ export default function CartModal({
   const [notes, setNotes] = useState('');
   const [orderSent, setOrderSent] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
+  const [isEditingDates, setIsEditingDates] = useState(false);
 
   // Cerrar con tecla Escape
   useEffect(() => {
@@ -222,6 +228,103 @@ export default function CartModal({
             </div>
           ) : (
             <>
+              {/* Ajuste Rápido de Fecha y Modalidad dentro del Carrito */}
+              {setSelectedDate && (
+                <div className="bg-[#0a0f1d] p-3.5 rounded-2xl border border-slate-800 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Fecha y Modalidad del Evento
+                    </span>
+                    {setRentalMode && (
+                      <div className="flex items-center gap-1 bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setRentalMode('days')}
+                          className={`px-2 py-0.5 rounded font-bold transition-all ${
+                            rentalMode === 'days' ? 'bg-amber-500 text-black font-black' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Días
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRentalMode('hours')}
+                          className={`px-2 py-0.5 rounded font-bold transition-all ${
+                            rentalMode === 'hours' ? 'bg-cyan-400 text-black font-black' : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Horas
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {/* Input Fecha */}
+                    <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <input
+                        type="date"
+                        value={selectedDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setSelectedDate(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-white w-full focus:outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Stepper Duración */}
+                    {rentalMode === 'hours' ? (
+                      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                        <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                          {rentalHours}h Show
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => rentalHours > 1 && setRentalHours && setRentalHours(rentalHours - 1)}
+                            className="w-5 h-5 rounded bg-slate-800 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-700"
+                          >
+                            -
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => rentalHours < 24 && setRentalHours && setRentalHours(rentalHours + 1)}
+                            className="w-5 h-5 rounded bg-cyan-400 text-black flex items-center justify-center font-bold text-xs hover:bg-cyan-300"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+                        <span className="text-xs text-slate-300 font-bold flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                          {rentalDays} {rentalDays === 1 ? 'Día' : 'Días'}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => rentalDays > 1 && setRentalDays && setRentalDays(rentalDays - 1)}
+                            className="w-5 h-5 rounded bg-slate-800 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-700"
+                          >
+                            -
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRentalDays && setRentalDays(rentalDays + 1)}
+                            className="w-5 h-5 rounded bg-amber-500 text-black flex items-center justify-center font-bold text-xs hover:bg-amber-400"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Items List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider">
