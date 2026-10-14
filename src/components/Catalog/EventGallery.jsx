@@ -1,7 +1,7 @@
-import React, { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { 
-  Camera, Sparkles, MessageCircle, X, Maximize2, 
-  ChevronLeft, ChevronRight, Eye, ShieldCheck, Flame
+  Camera, MessageCircle, X, Maximize2, 
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 function EventGallery({ gallery = [], settings = {} }) {
@@ -80,6 +80,7 @@ function EventGallery({ gallery = [], settings = {} }) {
           {availableTags.map(tag => (
             <button
               key={tag}
+              type="button"
               onClick={() => setSelectedTag(tag)}
               className={`px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all ${
                 selectedTag === tag
@@ -163,6 +164,7 @@ function EventGallery({ gallery = [], settings = {} }) {
               </div>
 
               <button
+                type="button"
                 onClick={() => setActiveIndex(null)}
                 className="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center transition-colors border border-slate-800 shrink-0"
                 title="Cerrar (Esc)"
@@ -182,6 +184,7 @@ function EventGallery({ gallery = [], settings = {} }) {
               {/* Botón Flecha Anterior (←) */}
               {filteredGallery.length > 1 && (
                 <button
+                  type="button"
                   onClick={handlePrev}
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-black/70 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-slate-800 active:scale-95 shadow-2xl hover:border-amber-500/50"
                   title="Foto anterior (←)"
@@ -193,6 +196,7 @@ function EventGallery({ gallery = [], settings = {} }) {
               {/* Botón Flecha Siguiente (→) */}
               {filteredGallery.length > 1 && (
                 <button
+                  type="button"
                   onClick={handleNext}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-black/70 hover:bg-black/90 text-white flex items-center justify-center transition-all border border-slate-800 active:scale-95 shadow-2xl hover:border-amber-500/50"
                   title="Foto siguiente (→)"

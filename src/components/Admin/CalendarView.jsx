@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  AlertCircle, CheckCircle2, Clock, ShieldAlert, Sparkles, 
-  Eye, ArrowRight, MapPin, DollarSign, User, Truck, ShieldCheck 
+  Eye, MapPin 
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 import EventDetailModal from './EventDetailModal';

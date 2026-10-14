@@ -1,8 +1,7 @@
-import React from 'react';
 import { 
   Inbox, Calendar, Package, Wrench, BarChart3, Layout, 
   KeyRound, SlidersHorizontal, Eye, LogOut, ShieldCheck, 
-  Crown, Zap, ChevronRight, X, Sparkles, DollarSign
+  Crown, Zap, ChevronRight, X, DollarSign
 } from 'lucide-react';
 
 export default function AdminSidebar({

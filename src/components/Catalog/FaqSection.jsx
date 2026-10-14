@@ -1,7 +1,7 @@
-import React, { useState, memo } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp, MessageCircle, MapPin, Sparkles } from 'lucide-react';
+import { useState, memo } from 'react';
+import { HelpCircle, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react';
 
-function FaqSection({ settings }) {
+function FaqSection({ settings = {} }) {
   const [openIndex, setOpenIndex] = useState(null);
 
   if (!settings.showFaqSection || !settings.faqs || settings.faqs.length === 0) {
@@ -13,7 +13,8 @@ function FaqSection({ settings }) {
   };
 
   const handleOpenDirectWhatsApp = () => {
-    const phone = settings.whatsappNumber.replace(/\D/g, '');
+    const rawNumber = settings.whatsappNumber || '573000000000';
+    const phone = rawNumber.replace(/\D/g, '');
     const url = `https://wa.me/${phone}?text=${encodeURIComponent('Hola, tengo una pregunta sobre el alquiler de sonido para mi evento...')}`;
     window.open(url, '_blank');
   };
@@ -47,6 +48,7 @@ function FaqSection({ settings }) {
               <button
                 type="button"
                 onClick={() => toggleAccordion(idx)}
+                aria-expanded={isOpen}
                 className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-slate-100 hover:text-amber-400 transition-colors"
               >
                 <span>{faq.question}</span>
@@ -71,6 +73,7 @@ function FaqSection({ settings }) {
           ¿Tienes una fecha especial o un requerimiento a medida?
         </p>
         <button
+          type="button"
           onClick={handleOpenDirectWhatsApp}
           className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold px-4 py-2 rounded-xl text-xs transition-colors shadow-md shadow-emerald-950/40"
         >

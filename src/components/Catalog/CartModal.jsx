@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { X, Trash2, Plus, Minus, MessageSquare, Send, Calendar, Clock, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Trash2, Plus, Minus, MessageSquare, Calendar, Clock, MapPin, User, Phone, CheckCircle, Sparkles } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, generateWhatsAppLink } from '../../services/storageService';
 import { showAlert } from '../../services/alertService';
 
 export default function CartModal({
   isOpen,
   onClose,
-  cart,
+  cart = [],
   selectedDate,
   setSelectedDate,
   rentalDays = 1,
@@ -16,7 +16,6 @@ export default function CartModal({
   rentalHours = 4,
   setRentalHours,
   eventStartTime = '20:00',
-  setEventStartTime,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -28,7 +27,6 @@ export default function CartModal({
   const [notes, setNotes] = useState('');
   const [orderSent, setOrderSent] = useState(false);
   const [lastOrderId, setLastOrderId] = useState('');
-  const [isEditingDates, setIsEditingDates] = useState(false);
 
   // Cerrar con tecla Escape
   useEffect(() => {
@@ -56,6 +54,14 @@ export default function CartModal({
 
   const handleSendWhatsApp = (e) => {
     e.preventDefault();
+    if (!cart || cart.length === 0) {
+      showAlert({
+        title: 'Carrito vacío',
+        text: 'Agrega al menos un equipo o paquete de sonido antes de enviar tu cotización.',
+        icon: 'warning'
+      });
+      return;
+    }
     if (!clientName.trim()) {
       showAlert({
         title: 'Nombre requerido',
@@ -64,10 +70,11 @@ export default function CartModal({
       });
       return;
     }
-    if (!clientPhone.trim()) {
+    const cleanDigits = clientPhone.replace(/\D/g, '');
+    if (!clientPhone.trim() || cleanDigits.length < 7) {
       showAlert({
         title: 'WhatsApp requerido',
-        text: 'Por favor indica tu número de celular o WhatsApp de contacto.',
+        text: 'Por favor indica un número de celular o WhatsApp válido (mínimo 7 dígitos).',
         icon: 'warning'
       });
       return;

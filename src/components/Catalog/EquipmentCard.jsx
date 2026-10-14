@@ -1,5 +1,5 @@
-import React, { useState, memo } from 'react';
-import { Plus, Minus, Check, Cable, Zap, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { useState, memo } from 'react';
+import { Plus, Minus, Check, Cable, Zap, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
 function EquipmentCard({ 
@@ -70,7 +70,7 @@ function EquipmentCard({
           loading="lazy"
           decoding="async"
           onError={(e) => {
-            e.target.src = "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80";
+            e.currentTarget.src = "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=800&q=80";
           }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#111622] via-transparent to-transparent" />
@@ -133,6 +133,7 @@ function EquipmentCard({
                 type="button"
                 onClick={() => setShowIncludes(!showIncludes)}
                 className="flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors"
+                aria-expanded={showIncludes}
               >
                 <Cable className="w-3 h-3" />
                 <span>{showIncludes ? 'Ocultar accesorios' : `Incluye ${equipment.includes.length} cables y accesorios`}</span>
@@ -177,8 +178,10 @@ function EquipmentCard({
             ) : inCartQty > 0 ? (
               <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/40 p-1 rounded-xl">
                 <button
+                  type="button"
                   onClick={() => onUpdateCartQuantity(equipment.id, inCartQty - 1)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold"
+                  aria-label="Disminuir cantidad"
+                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors active:scale-95"
                 >
                   <Minus className="w-3.5 h-3.5" />
                 </button>
@@ -186,12 +189,14 @@ function EquipmentCard({
                   {inCartQty}
                 </span>
                 <button
+                  type="button"
                   onClick={() => onUpdateCartQuantity(equipment.id, inCartQty + 1)}
                   disabled={inCartQty >= availableCount}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg font-bold ${
+                  aria-label="Aumentar cantidad"
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg font-bold transition-colors active:scale-95 ${
                     inCartQty >= availableCount
                       ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                      : 'bg-amber-500 hover:bg-amber-400 text-black'
+                      : 'bg-amber-500 hover:bg-amber-400 text-black shadow-sm shadow-amber-500/20'
                   }`}
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -199,6 +204,7 @@ function EquipmentCard({
               </div>
             ) : (
               <button
+                type="button"
                 onClick={handleAdd}
                 className="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all transform active:scale-95"
               >

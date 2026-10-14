@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Search, Filter, CheckCircle2, Clock, Truck, Check, 
-  XCircle, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, 
-  ShieldCheck, Eye, Sparkles, Wrench, X
+  Search, DollarSign, MessageCircle, FileText, Cable, AlertTriangle, 
+  Eye, Wrench, X
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 import { showConfirm } from '../../services/alertService';

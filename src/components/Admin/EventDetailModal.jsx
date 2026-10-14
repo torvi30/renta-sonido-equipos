@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, Calendar, MapPin, Phone, MessageCircle, DollarSign, 
   Cable, FileText, CheckCircle2, Clock, Truck, ShieldCheck, 
-  ExternalLink, User, AlertTriangle, Sparkles, Navigation, 
-  Copy, Check, Share2, Compass, Layers, ArrowRight, ShieldAlert,
-  HelpCircle, ChevronRight
+  User, AlertTriangle, Sparkles, Navigation, 
+  Copy, Check, Compass, Layers
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
 import { showConfirm } from '../../services/alertService';
@@ -392,7 +391,7 @@ _Generado desde Sound & Event Control PRO_`;
                       Notas & Observaciones del Cliente:
                     </span>
                     <p className="text-amber-100/90 italic pl-1 text-xs sm:text-sm">
-                      "{booking.notes}"
+                      &quot;{booking.notes}&quot;
                     </p>
                   </div>
                 )}

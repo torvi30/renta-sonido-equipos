@@ -1,12 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  X, MessageCircle, Send, DollarSign, CheckCircle2, 
-  Sparkles, Star, Copy, ExternalLink, HelpCircle 
-} from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { X, MessageCircle, Send, Copy } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, getStoredSettings } from '../../services/storageService';
 import { showSuccess } from '../../services/alertService';
 
 export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
+  const [selectedTemplateId, setSelectedTemplateId] = useState('balance_reminder');
+  const [customText, setCustomText] = useState('');
+
+  const settings = useMemo(() => getStoredSettings(), []);
+
+  // Plantillas prediseñadas calculadas reactivamente
+  const templates = useMemo(() => {
+    if (!booking) return [];
+    return [
+      {
+        id: 'balance_reminder',
+        title: '🚨 Cobro de Saldo Pendiente',
+        desc: 'Enviar antes del evento para recordar el saldo por pagar',
+        generate: () => {
+          let msg = `Hola *${booking.clientName}* 👋, te saludamos de *${settings.businessName}*.\n\n`;
+          msg += `Te recordamos los detalles de tu evento para el *${formatDateFriendly(booking.eventDate)}*:\n`;
+          msg += `📍 *Lugar:* ${booking.eventLocation || 'Por confirmar'}\n`;
+          msg += `💰 *Valor Total:* ${formatCurrency(booking.totalAmount)}\n`;
+          msg += `💵 *Abono Recibido:* ${formatCurrency(booking.depositAmount || 0)}\n`;
+          msg += `⚠️ *SALDO PENDIENTE POR PAGAR:* *${formatCurrency(booking.balanceDue || 0)}*\n\n`;
+          msg += `Por favor tener este saldo listo en efectivo o Nequi al momento del montaje e inicio del evento. ¡Nos vemos pronto para poner la mejor música y sonido! 🔊🎶`;
+          return msg;
+        }
+      },
+      {
+        id: 'booking_confirmed',
+        title: '🔒 Confirmación de Reserva & Bloqueo',
+        desc: 'Avisar que el abono fue recibido y los equipos están separados',
+        generate: () => {
+          let msg = `Hola *${booking.clientName}* 🎉, ¡tu reserva está 100% CONFIRMADA!\n\n`;
+          msg += `Hemos registrado tu pedido *#${booking.id}* para el *${formatDateFriendly(booking.eventDate)}*.\n`;
+          msg += `Los equipos de sonido y luces ya se encuentran *bloqueados en nuestro calendario* a tu nombre.\n\n`;
+          msg += `📦 *Equipos Separados:*\n`;
+          if (Array.isArray(booking.items)) {
+            booking.items.forEach(it => {
+              msg += `• ${it.quantity}x ${it.name}\n`;
+            });
+          }
+          msg += `\n💵 *Abono Recibido:* ${formatCurrency(booking.depositAmount || 0)}\n`;
+          msg += `🤝 Estaremos en la locación con suficiente tiempo para montar y hacer prueba de sonido. ¡Gracias por confiar en *${settings.businessName}*!`;
+          return msg;
+        }
+      },
+      {
+        id: 'post_event_thanks',
+        title: '⭐ Agradecimiento & Reseña Pos-Evento',
+        desc: 'Enviar el día siguiente para fidelizar al cliente y pedir reseña',
+        generate: () => {
+          let msg = `¡Hola *${booking.clientName}*! 🎉🍾\n\n`;
+          msg += `Esperamos que el evento de ayer haya salido fenomenal y que tú y tus invitados hayan disfrutado la música y el sonido al máximo.\n\n`;
+          msg += `Para nosotros en *${settings.businessName}* fue un honor acompañarte. ¿Qué tal te pareció la calidad del sonido y la puntualidad del servicio?\n\n`;
+          msg += `Si tienes 1 minuto, nos ayudaría muchísimo tu recomendación con amigos y familiares. ¡Quedamos a tu orden para tus próximas fiestas y eventos! 🎧🔊`;
+          return msg;
+        }
+      },
+      {
+        id: 'quick_chat',
+        title: '💬 Mensaje Directo de Saludo',
+        desc: 'Abrir chat normal para coordinar horarios o logística',
+        generate: () => {
+          return `Hola *${booking.clientName}*, te contacto de *${settings.businessName}* respecto a tu orden de sonido #${booking.id}...`;
+        }
+      }
+    ];
+  }, [booking, settings]);
+
+  // Sincronizar texto inicial cuando cambie booking o isOpen
+  useEffect(() => {
+    if (booking && templates.length > 0) {
+      const activeTpl = templates.find(t => t.id === selectedTemplateId) || templates[0];
+      setCustomText(activeTpl.generate());
+    }
+  }, [booking, isOpen, templates, selectedTemplateId]);
+
   // Manejar tecla Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -17,76 +88,14 @@ export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !booking) return null;
-
-  const settings = getStoredSettings();
-  const cleanPhone = booking.clientPhone.replace(/\D/g, '');
-
-  // Plantillas prediseñadas
-  const templates = [
-    {
-      id: 'balance_reminder',
-      title: '🚨 Cobro de Saldo Pendiente',
-      desc: 'Enviar antes del evento para recordar el saldo por pagar',
-      generate: () => {
-        let msg = `Hola *${booking.clientName}* 👋, te saludamos de *${settings.businessName}*.\n\n`;
-        msg += `Te recordamos los detalles de tu evento para el *${formatDateFriendly(booking.eventDate)}*:\n`;
-        msg += `📍 *Lugar:* ${booking.eventLocation || 'Por confirmar'}\n`;
-        msg += `💰 *Valor Total:* ${formatCurrency(booking.totalAmount)}\n`;
-        msg += `💵 *Abono Recibido:* ${formatCurrency(booking.depositAmount || 0)}\n`;
-        msg += `⚠️ *SALDO PENDIENTE POR PAGAR:* *${formatCurrency(booking.balanceDue || 0)}*\n\n`;
-        msg += `Por favor tener este saldo listo en efectivo o Nequi al momento del montaje e inicio del evento. ¡Nos vemos pronto para poner la mejor música y sonido! 🔊🎶`;
-        return msg;
-      }
-    },
-    {
-      id: 'booking_confirmed',
-      title: '🔒 Confirmación de Reserva & Bloqueo',
-      desc: 'Avisar que el abono fue recibido y los equipos están separados',
-      generate: () => {
-        let msg = `Hola *${booking.clientName}* 🎉, ¡tu reserva está 100% CONFIRMADA!\n\n`;
-        msg += `Hemos registrado tu pedido *#${booking.id}* para el *${formatDateFriendly(booking.eventDate)}*.\n`;
-        msg += `Los equipos de sonido y luces ya se encuentran *bloqueados en nuestro calendario* a tu nombre.\n\n`;
-        msg += `📦 *Equipos Separados:*\n`;
-        booking.items.forEach(it => {
-          msg += `• ${it.quantity}x ${it.name}\n`;
-        });
-        msg += `\n💵 *Abono Recibido:* ${formatCurrency(booking.depositAmount || 0)}\n`;
-        msg += `🤝 Estaremos en la locación con suficiente tiempo para montar y hacer prueba de sonido. ¡Gracias por confiar en *${settings.businessName}*!`;
-        return msg;
-      }
-    },
-    {
-      id: 'post_event_thanks',
-      title: '⭐ Agradecimiento & Reseña Pos-Evento',
-      desc: 'Enviar el día siguiente para fidelizar al cliente y pedir reseña',
-      generate: () => {
-        let msg = `¡Hola *${booking.clientName}*! 🎉🍾\n\n`;
-        msg += `Esperamos que el evento de ayer haya salido fenomenal y que tú y tus invitados hayan disfrutado la música y el sonido al máximo.\n\n`;
-        msg += `Para nosotros en *${settings.businessName}* fue un honor acompañarte. ¿Qué tal te pareció la calidad del sonido y la puntualidad del servicio?\n\n`;
-        msg += `Si tienes 1 minuto, nos ayudaría muchísimo tu recomendación con amigos y familiares. ¡Quedamos a tu orden para tus próximas fiestas y eventos! 🎧🔊`;
-        return msg;
-      }
-    },
-    {
-      id: 'quick_chat',
-      title: '💬 Mensaje Directo de Saludo',
-      desc: 'Abrir chat normal para coordinar horarios o logística',
-      generate: () => {
-        return `Hola *${booking.clientName}*, te contacto de *${settings.businessName}* respecto a tu orden de sonido #${booking.id}...`;
-      }
-    }
-  ];
-
-  const [selectedTemplateId, setSelectedTemplateId] = useState('balance_reminder');
-  const [customText, setCustomText] = useState(templates[0].generate());
-
-  const handleSelectTemplate = (tpl) => {
+  const handleSelectTemplate = useCallback((tpl) => {
     setSelectedTemplateId(tpl.id);
     setCustomText(tpl.generate());
-  };
+  }, []);
 
   const handleSendToWhatsApp = () => {
+    if (!booking) return;
+    const cleanPhone = (booking.clientPhone || '').replace(/\D/g, '');
     const encoded = encodeURIComponent(customText);
     const url = `https://wa.me/${cleanPhone}?text=${encoded}`;
     window.open(url, '_blank');
@@ -97,6 +106,8 @@ export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
     navigator.clipboard.writeText(customText);
     showSuccess('¡Copiado!', 'Mensaje copiado al portapapeles listo para pegar en WhatsApp.');
   };
+
+  if (!isOpen || !booking) return null;
 
   return (
     <div 
@@ -123,7 +134,12 @@ export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-white">
+          <button 
+            type="button"
+            onClick={onClose} 
+            className="p-2 text-slate-400 hover:text-white"
+            aria-label="Cerrar modal"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -188,14 +204,16 @@ export default function WhatsAppTemplatesModal({ isOpen, onClose, booking }) {
 
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
             >
               Cancelar
             </button>
             <button
+              type="button"
               onClick={handleSendToWhatsApp}
-              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-950/50"
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-950/50 transition-all active:scale-95"
             >
               <Send className="w-4 h-4 fill-black" />
               <span>Enviar por WhatsApp</span>

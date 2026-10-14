@@ -1,13 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
-  TrendingUp, TrendingDown, DollarSign, Calendar, Package, 
+  TrendingUp, DollarSign, Calendar, Package, 
   BarChart3, Award, CheckCircle2, XCircle, ArrowUpRight,
-  Users, Wrench, Clock, Sparkles, Zap, Flame, ShieldCheck, 
-  Copy, Check, PieChart, Layers, Filter, Wallet, Music, 
-  Headphones, ChevronRight, AlertCircle, ArrowDownRight,
-  Receipt, Landmark, BadgeCheck, Eye
+  Users, Clock, Sparkles, Flame, 
+  Copy, Check, PieChart, Wallet, 
+  Receipt, Landmark, BadgeCheck
 } from 'lucide-react';
-import { formatCurrency, formatDateFriendly } from '../../services/storageService';
+import { formatCurrency } from '../../services/storageService';
 import { showAlert } from '../../services/alertService';
 
 export default function FinancialReports({ 
@@ -23,9 +22,12 @@ export default function FinancialReports({
   const [hoveredMonth, setHoveredMonth] = useState(null);
   const [copiedBalance, setCopiedBalance] = useState(false);
 
-  // Fecha actual de referencia
-  const today = new Date();
-  const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  // Fecha actual de referencia memorizada
+  const today = useMemo(() => new Date(), []);
+  const currentMonthStr = useMemo(() => {
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  }, [today]);
+  const currentYear = useMemo(() => today.getFullYear(), [today]);
 
   // Filtrado dinámico de reservas según timeframe
   const filteredBookings = useMemo(() => {
@@ -34,8 +36,7 @@ export default function FinancialReports({
       if (selectedTimeframe === 'ALL') return true;
       if (selectedTimeframe === 'THIS_MONTH') return b.eventDate.startsWith(currentMonthStr);
       if (selectedTimeframe === 'PEAK_SEASON') {
-        const year = today.getFullYear();
-        return b.eventDate.startsWith(`${year}-11`) || b.eventDate.startsWith(`${year}-12`);
+        return b.eventDate.startsWith(`${currentYear}-11`) || b.eventDate.startsWith(`${currentYear}-12`);
       }
       if (selectedTimeframe === '30_DAYS') {
         const diffDays = (new Date(b.eventDate) - today) / (1000 * 60 * 60 * 24);
@@ -44,7 +45,7 @@ export default function FinancialReports({
       // Mes específico YYYY-MM
       return b.eventDate.startsWith(selectedTimeframe);
     });
-  }, [bookings, selectedTimeframe, currentMonthStr]);
+  }, [bookings, selectedTimeframe, currentMonthStr, currentYear, today]);
 
   // Cálculos Maestros de Dinero
   const validBookings = useMemo(() => filteredBookings.filter(b => b.status !== 'Cancelado'), [filteredBookings]);
@@ -79,7 +80,6 @@ export default function FinancialReports({
   // Generar meses para el gráfico interactivo (últimos 6 meses hasta el fin de año)
   const monthlyChartData = useMemo(() => {
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const currentYear = today.getFullYear();
     const monthsToShow = [6, 7, 8, 9, 10, 11]; // Jul a Dic
 
     return monthsToShow.map(mIndex => {
@@ -100,7 +100,7 @@ export default function FinancialReports({
         isCurrentMonth: monthKey === currentMonthStr
       };
     });
-  }, [bookings, currentMonthStr]);
+  }, [bookings, currentMonthStr, currentYear]);
 
   const maxMonthGross = useMemo(() => {
     const maxVal = Math.max(...monthlyChartData.map(m => m.gross), 1500000);

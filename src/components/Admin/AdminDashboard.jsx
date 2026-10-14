@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
-  Inbox, Calendar, Package, DollarSign, AlertTriangle, 
-  TrendingUp, Clock, CheckCircle2, ShieldCheck, Flame,
-  Layout, BarChart3, Truck, Wrench, Navigation, CheckSquare, LogOut
+  Inbox, Calendar, Package, DollarSign, 
+  TrendingUp, ShieldCheck,
+  Layout, BarChart3, Truck, Wrench
 } from 'lucide-react';
 import OrdersInbox from './OrdersInbox';
 import CalendarView from './CalendarView';
@@ -13,14 +13,14 @@ import RepairManager from './RepairManager';
 import { formatCurrency } from '../../services/storageService';
 
 export default function AdminDashboard({
-  bookings,
-  equipmentList,
+  bookings = [],
+  equipmentList = [],
   repairs = [],
   settings,
   currentRole = 'superadmin',
   currentWorkerName = '',
   onSaveSettings,
-  combosList,
+  combosList = [],
   onSaveCombo,
   onDeleteCombo,
   onUpdateBookingStatus,
@@ -29,14 +29,10 @@ export default function AdminDashboard({
   onOpenReceipt,
   onSaveEquipment,
   onDeleteEquipment,
-  onLogout,
-  onOpenSettings,
   onSaveRepair,
   onDeleteRepair,
   onUpdateRepairStatus,
   payroll = [],
-  onSavePayroll,
-  onDeletePayroll,
   onOpenReceivablesPayroll,
   adminTab: propAdminTab,
   setAdminTab: propSetAdminTab,
@@ -48,18 +44,18 @@ export default function AdminDashboard({
   const setAdminTab = propSetAdminTab || setLocalAdminTab;
 
   // Restringir tabs según el rango del usuario
-  const isTabAllowed = (tab) => {
+  const isTabAllowed = useCallback((tab) => {
     if (currentRole === 'superadmin') return true;
     if (currentRole === 'admin') return ['orders', 'calendar', 'inventory', 'repairs'].includes(tab);
     if (currentRole === 'staff') return ['orders', 'calendar', 'repairs'].includes(tab);
     return false;
-  };
+  }, [currentRole]);
 
   useEffect(() => {
     if (!isTabAllowed(adminTab)) {
       setAdminTab('orders');
     }
-  }, [currentRole]);
+  }, [currentRole, adminTab, isTabAllowed, setAdminTab]);
 
   // KPI Calculations
   const pendingOrders = bookings.filter(b => b.status === 'Pendiente');

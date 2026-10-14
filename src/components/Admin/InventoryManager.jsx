@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
-  Plus, Trash2, Edit2, Package, Sparkles, X, Check, Cable, 
-  Upload, Camera, Link as LinkIcon, Search, Star, Layers, ShieldCheck
+  Plus, Trash2, Edit2, Package, X, Check, Cable, 
+  Upload, Camera, Search, Star, Layers
 } from 'lucide-react';
 import { formatCurrency, processImageFile } from '../../services/storageService';
 import { showConfirm, showError } from '../../services/alertService';
@@ -328,7 +328,7 @@ export default function InventoryManager({
               <div className="col-span-full text-center py-12 bg-[#111622] rounded-2xl border border-slate-800">
                 <Package className="w-10 h-10 text-slate-600 mx-auto mb-2" />
                 <p className="text-white font-bold text-sm">No hay equipos en esta categoría</p>
-                <p className="text-xs text-slate-400 mt-1">Presiona "Crear Producto" para agregar equipos nuevos.</p>
+                <p className="text-xs text-slate-400 mt-1">Presiona &quot;Crear Producto&quot; para agregar equipos nuevos.</p>
               </div>
             ) : (
               filteredEquipment.map(item => (

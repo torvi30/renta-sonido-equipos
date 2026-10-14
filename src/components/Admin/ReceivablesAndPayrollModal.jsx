@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, DollarSign, Users, Calendar, Phone, MapPin, 
   CheckCircle2, Clock, MessageSquare, Plus, Trash2, 
-  Send, AlertCircle, ArrowUpRight, TrendingDown,
-  ShieldCheck, Wrench, Sparkles, Filter, Search
+  AlertCircle, ArrowUpRight,
+  ShieldCheck, Wrench, Sparkles, Search
 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly } from '../../services/storageService';
-import { showConfirm, showAlert, showError, showSuccess } from '../../services/alertService';
+import { showConfirm, showError, showSuccess } from '../../services/alertService';
 
 export default function ReceivablesAndPayrollModal({
   isOpen,
@@ -18,7 +18,6 @@ export default function ReceivablesAndPayrollModal({
   onSavePayment,
   onSavePayroll,
   onDeletePayroll,
-  onOpenEventDetail,
   onOpenPaymentModal,
   initialTab = 'receivables'
 }) {
@@ -640,7 +639,7 @@ export default function ReceivablesAndPayrollModal({
                   <Users className="w-10 h-10 text-purple-400 mx-auto mb-2 opacity-80" />
                   <h4 className="text-sm font-bold text-white">No hay salarios registrados</h4>
                   <p className="text-xs text-slate-400 mt-1">
-                    Usa el botón "Registrar Salario / Turno" para llevar el control de tus técnicos y DJs.
+                    Usa el botón &quot;Registrar Salario / Turno&quot; para llevar el control de tus técnicos y DJs.
                   </p>
                 </div>
               ) : (

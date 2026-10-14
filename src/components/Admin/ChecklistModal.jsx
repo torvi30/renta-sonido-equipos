@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { X, CheckSquare, Square, Cable, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, CheckSquare, Square, Cable } from 'lucide-react';
 
-export default function ChecklistModal({ isOpen, onClose, booking, equipmentList, onSaveChecklist }) {
+export default function ChecklistModal({ isOpen, onClose, booking, equipmentList = [], onSaveChecklist }) {
+  const [checkedMap, setCheckedMap] = useState({});
+
+  // Sincronizar checklist cuando se abra el modal o cambie booking
+  useEffect(() => {
+    if (booking) {
+      setCheckedMap(booking.checklistMap || {});
+    }
+  }, [booking, isOpen]);
+
   // Manejar tecla Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -12,10 +21,9 @@ export default function ChecklistModal({ isOpen, onClose, booking, equipmentList
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !booking) return null;
-
   // Recopilar todos los cables y accesorios de los equipos del pedido
-  const buildItemsList = () => {
+  const allItems = useMemo(() => {
+    if (!booking || !Array.isArray(booking.items)) return [];
     const list = [];
     booking.items.forEach(item => {
       const eq = equipmentList.find(e => e.id === item.equipmentId);
@@ -24,7 +32,7 @@ export default function ChecklistModal({ isOpen, onClose, booking, equipmentList
         name: `${item.quantity}x ${item.name}`,
         category: 'Equipo Principal'
       });
-      if (eq && eq.includes) {
+      if (eq && Array.isArray(eq.includes)) {
         eq.includes.forEach((inc, idx) => {
           list.push({
             id: `inc-${item.equipmentId}-${idx}`,
@@ -35,10 +43,9 @@ export default function ChecklistModal({ isOpen, onClose, booking, equipmentList
       }
     });
     return list;
-  };
+  }, [booking, equipmentList]);
 
-  const allItems = buildItemsList();
-  const [checkedMap, setCheckedMap] = useState(booking.checklistMap || {});
+  if (!isOpen || !booking) return null;
 
   const toggleCheck = (itemId) => {
     setCheckedMap(prev => ({

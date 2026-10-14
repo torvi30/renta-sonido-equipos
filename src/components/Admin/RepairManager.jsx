@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Wrench, AlertTriangle, CheckCircle2, Clock, DollarSign, 
-  Plus, Search, MessageSquare, ShieldAlert, Sparkles, 
-  Package, Trash2, X, ExternalLink, Calendar, User, FileText, Check
+  Plus, Search, MessageSquare, ShieldAlert, 
+  Trash2, X, Calendar, User, FileText, Check
 } from 'lucide-react';
-import { formatCurrency, formatDateFriendly, generateDamageReportWhatsAppLink } from '../../services/storageService';
+import { formatCurrency, generateDamageReportWhatsAppLink } from '../../services/storageService';
 import { showConfirm } from '../../services/alertService';
 
 export default function RepairManager({
@@ -15,8 +15,7 @@ export default function RepairManager({
   currentWorkerName = '',
   settings = {},
   onSaveRepair,
-  onDeleteRepair,
-  onUpdateRepairStatus
+  onDeleteRepair
 }) {
   const [filterStatus, setFilterStatus] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');

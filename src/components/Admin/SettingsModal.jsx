@@ -1,10 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import { X, Settings, Phone, MessageSquare, ShieldCheck, Flame, Info, LogOut, Eye, EyeOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Settings, MessageSquare, ShieldCheck, Flame, LogOut, Eye, EyeOff } from 'lucide-react';
 import { getStoredSettings, saveStoredSettings } from '../../services/storageService';
 import { showAlert, showSuccess, showError } from '../../services/alertService';
 import { isFirebaseConfigured } from '../../firebase/config';
 
 export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogout }) {
+  const [businessName, setBusinessName] = useState('');
+  const [djName, setDjName] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [phone, setPhone] = useState('');
+  const [terms, setTerms] = useState('');
+  const [showPins, setShowPins] = useState(true);
+  const [adminPin, setAdminPin] = useState('1234');
+  const [managerPin, setManagerPin] = useState('2020');
+  const [staffPin, setStaffPin] = useState('3030');
+  const [workersList, setWorkersList] = useState([]);
+  const [newWorkerName, setNewWorkerName] = useState('');
+  const [newWorkerRole, setNewWorkerRole] = useState('staff');
+  const [newWorkerPin, setNewWorkerPin] = useState('');
+
+  // Sincronizar configuración actual cuando se abra el modal
+  useEffect(() => {
+    if (isOpen) {
+      const current = getStoredSettings();
+      setBusinessName(current.businessName || '');
+      setDjName(current.djName || '');
+      setWhatsappNumber(current.whatsappNumber || '');
+      setPhone(current.phone || '');
+      setTerms(current.termsAndConditions || '');
+      setAdminPin(current.adminPin || '1234');
+      setManagerPin(current.managerPin || '2020');
+      setStaffPin(current.staffPin || '3030');
+      setWorkersList(current.workers || []);
+    }
+  }, [isOpen]);
+
   // Manejar Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -18,20 +48,6 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogo
   if (!isOpen) return null;
 
   const current = getStoredSettings();
-
-  const [businessName, setBusinessName] = useState(current.businessName);
-  const [djName, setDjName] = useState(current.djName);
-  const [whatsappNumber, setWhatsappNumber] = useState(current.whatsappNumber);
-  const [phone, setPhone] = useState(current.phone);
-  const [terms, setTerms] = useState(current.termsAndConditions);
-  const [showPins, setShowPins] = useState(true);
-  const [adminPin, setAdminPin] = useState(current.adminPin || '1234');
-  const [managerPin, setManagerPin] = useState(current.managerPin || '2020');
-  const [staffPin, setStaffPin] = useState(current.staffPin || '3030');
-  const [workersList, setWorkersList] = useState(current.workers || []);
-  const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerRole, setNewWorkerRole] = useState('staff');
-  const [newWorkerPin, setNewWorkerPin] = useState('');
 
   const handleExportBackup = () => {
     const data = {
@@ -181,7 +197,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved, onLogo
               />
             </div>
             <p className="text-[10px] text-slate-500 mt-1">
-              Aquí es donde tus clientes te enviarán el mensaje automático cuando hagan clic en "Pedir por WhatsApp".
+              Aquí es donde tus clientes te enviarán el mensaje automático cuando hagan clic en &quot;Pedir por WhatsApp&quot;.
             </p>
           </div>
 

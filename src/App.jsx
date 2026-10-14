@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import LiveQuoteSidebar from './components/Catalog/LiveQuoteSidebar';
 import EquipmentCard from './components/Catalog/EquipmentCard';
@@ -7,6 +7,7 @@ import CartModal from './components/Catalog/CartModal';
 import FaqSection from './components/Catalog/FaqSection';
 import EventGallery from './components/Catalog/EventGallery';
 import Toast from './components/Toast';
+import NetworkStatusBanner from './components/NetworkStatusBanner';
 
 import AdminAuthGuard from './components/Admin/AdminAuthGuard';
 
@@ -41,7 +42,7 @@ import { CATEGORIES } from './data/initialData';
 import { 
   Sparkles, ShoppingBag, Volume2, 
   MapPin, Search, ArrowUpDown, Menu, Eye, LogOut,
-  Calendar, Clock
+  Calendar
 } from 'lucide-react';
 
 const InstagramIcon = ({ className = "w-4 h-4" }) => (
@@ -781,7 +782,7 @@ export default function App() {
 
                     {filteredEquipment.length === 0 ? (
                       <div className="text-center py-12 bg-[#111622] rounded-2xl border border-slate-800">
-                        <p className="text-slate-400 text-sm">No encontramos equipos que coincidan con "{catalogSearch}".</p>
+                        <p className="text-slate-400 text-sm">No encontramos equipos que coincidan con &quot;{catalogSearch}&quot;.</p>
                         <button
                           onClick={() => setCatalogSearch('')}
                           className="mt-2 text-xs text-amber-400 font-bold hover:underline"
@@ -1024,8 +1025,9 @@ export default function App() {
         </Suspense>
       )}
 
-      {/* TOAST NOTIFICATION */}
+      {/* TOAST NOTIFICATION & NETWORK STATUS */}
       <Toast toast={toast} onClose={() => setToast(null)} />
+      <NetworkStatusBanner />
 
     </div>
   );

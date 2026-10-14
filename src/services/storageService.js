@@ -1,7 +1,19 @@
-import { INITIAL_EQUIPMENT, INITIAL_COMBOS, INITIAL_BOOKINGS, INITIAL_REPAIRS, INITIAL_PAYROLL } from '../data/initialData';
+import { 
+  INITIAL_EQUIPMENT, 
+  INITIAL_COMBOS, 
+  INITIAL_BOOKINGS, 
+  INITIAL_REPAIRS, 
+  INITIAL_PAYROLL 
+} from '../data/initialData';
 import { db, isFirebaseConfigured } from '../firebase/config';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  getDocs 
+} from 'firebase/firestore';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   EQUIPMENT: 'sec_equipment_data',
   COMBOS: 'sec_combos_data',
   BOOKINGS: 'sec_bookings_data',
@@ -10,24 +22,22 @@ const STORAGE_KEYS = {
   PAYROLL: 'sec_payroll_data'
 };
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   businessName: "Sound & Event Control",
   djName: "DJ & Audio Master",
   phone: "+57 300 000 0000",
-  whatsappNumber: "573001234567", // Número de WhatsApp para recibir pedidos (sin + ni espacios)
+  whatsappNumber: "573001234567",
   currency: "COP",
   depositPercentage: 50,
   termsAndConditions: "El cliente se compromete a devolver los equipos en el mismo estado físico y funcional. Daños por líquidos, golpes o sobrevoltaje corren por cuenta del arrendatario.",
-  adminPin: "1234",       // PIN Super Admin (Dueño - Control Total)
-  managerPin: "2020",     // PIN Admin (Encargado - Operaciones sin finanzas globales)
-  staffPin: "3030",       // PIN Staff (Técnicos - Solo rutas, cables y bodega)
+  adminPin: "1234",
+  managerPin: "2020",
+  staffPin: "3030",
   workers: [
     { id: "w-1", name: "Dueño / Propietario", role: "superadmin", pin: "1234", phone: "" },
     { id: "w-2", name: "Encargado de Operaciones", role: "admin", pin: "2020", phone: "" },
     { id: "w-3", name: "Técnico de Tarima & Bodega", role: "staff", pin: "3030", phone: "" }
   ],
-
-  // Personalización de Landing Page
   heroBadge: "Audio Pro & Cabinas DJ",
   heroTitle: "Alquiler de Sonido Profesional, Iluminación y Cabinas DJ",
   heroSubtitle: "Arma tu paquete para fiestas, matrimonios, quinceañeros y eventos corporativos. Selecciona tu fecha, cotiza en vivo y separa tu montaje al instante vía WhatsApp.",
@@ -78,102 +88,114 @@ const DEFAULT_SETTINGS = {
   ]
 };
 
-
-
-// Inicializadores con persistencia
-export const getStoredEquipment = () => {
+// Safe LocalStorage Wrapper con manejo de QuotaExceededError
+const safeGet = (key, fallback) => {
+  if (typeof window === 'undefined') return fallback;
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.EQUIPMENT);
-    return data ? JSON.parse(data) : INITIAL_EQUIPMENT;
-  } catch (e) {
-    return INITIAL_EQUIPMENT;
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed !== null && parsed !== undefined ? parsed : fallback;
+  } catch (error) {
+    console.warn(`[storageService] Error al leer key '${key}':`, error);
+    return fallback;
   }
 };
 
+const safeSet = (key, value) => {
+  if (typeof window === 'undefined') return false;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (error) {
+    if (error.name === 'QuotaExceededError' || error.code === 22) {
+      console.error(`[storageService] QuotaExceededError al guardar '${key}'. Limpiando caché temporal.`);
+    } else {
+      console.error(`[storageService] Error al escribir key '${key}':`, error);
+    }
+    return false;
+  }
+};
+
+// Sincronización transparente con Firebase Firestore (si está configurado)
+export const syncWithCloudIfAvailable = async (collectionName, dataId, payload) => {
+  if (!isFirebaseConfigured || !db) return;
+  try {
+    const docRef = doc(db, collectionName, String(dataId));
+    await setDoc(docRef, { ...payload, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    console.warn(`[storageService/firebase] Fallo no crítico de sincronización en '${collectionName}':`, err.message);
+  }
+};
+
+export const fetchCollectionFromCloud = async (collectionName) => {
+  if (!isFirebaseConfigured || !db) return null;
+  try {
+    const querySnapshot = await getDocs(collection(db, collectionName));
+    const items = [];
+    querySnapshot.forEach(docSnap => {
+      items.push({ id: docSnap.id, ...docSnap.data() });
+    });
+    return items.length > 0 ? items : null;
+  } catch (err) {
+    console.warn(`[storageService/firebase] No se pudo leer '${collectionName}' de Firestore:`, err.message);
+    return null;
+  }
+};
+
+// Inicializadores y persistencia segura
+export const getStoredEquipment = () => safeGet(STORAGE_KEYS.EQUIPMENT, INITIAL_EQUIPMENT);
 export const saveStoredEquipment = (equipment) => {
-  localStorage.setItem(STORAGE_KEYS.EQUIPMENT, JSON.stringify(equipment));
+  safeSet(STORAGE_KEYS.EQUIPMENT, equipment);
 };
 
-export const getStoredCombos = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.COMBOS);
-    return data ? JSON.parse(data) : INITIAL_COMBOS;
-  } catch (e) {
-    return INITIAL_COMBOS;
-  }
-};
-
+export const getStoredCombos = () => safeGet(STORAGE_KEYS.COMBOS, INITIAL_COMBOS);
 export const saveStoredCombos = (combos) => {
-  localStorage.setItem(STORAGE_KEYS.COMBOS, JSON.stringify(combos));
+  safeSet(STORAGE_KEYS.COMBOS, combos);
 };
 
-export const getStoredBookings = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.BOOKINGS);
-    return data ? JSON.parse(data) : INITIAL_BOOKINGS;
-  } catch (e) {
-    return INITIAL_BOOKINGS;
-  }
-};
-
+export const getStoredBookings = () => safeGet(STORAGE_KEYS.BOOKINGS, INITIAL_BOOKINGS);
 export const saveStoredBookings = (bookings) => {
-  localStorage.setItem(STORAGE_KEYS.BOOKINGS, JSON.stringify(bookings));
+  safeSet(STORAGE_KEYS.BOOKINGS, bookings);
 };
 
 export const getStoredSettings = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-    return data ? { ...DEFAULT_SETTINGS, ...JSON.parse(data) } : DEFAULT_SETTINGS;
-  } catch (e) {
-    return DEFAULT_SETTINGS;
-  }
+  const loaded = safeGet(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
+  return { ...DEFAULT_SETTINGS, ...loaded };
 };
-
 export const saveStoredSettings = (settings) => {
-  localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+  safeSet(STORAGE_KEYS.SETTINGS, settings);
 };
 
-export const getStoredRepairs = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.REPAIRS);
-    return data ? JSON.parse(data) : INITIAL_REPAIRS;
-  } catch (e) {
-    return INITIAL_REPAIRS;
-  }
-};
-
+export const getStoredRepairs = () => safeGet(STORAGE_KEYS.REPAIRS, INITIAL_REPAIRS);
 export const saveStoredRepairs = (repairs) => {
-  localStorage.setItem(STORAGE_KEYS.REPAIRS, JSON.stringify(repairs));
+  safeSet(STORAGE_KEYS.REPAIRS, repairs);
 };
 
-export const getStoredPayroll = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.PAYROLL);
-    return data ? JSON.parse(data) : INITIAL_PAYROLL;
-  } catch (e) {
-    return INITIAL_PAYROLL;
-  }
-};
-
+export const getStoredPayroll = () => safeGet(STORAGE_KEYS.PAYROLL, INITIAL_PAYROLL);
 export const saveStoredPayroll = (payroll) => {
-  localStorage.setItem(STORAGE_KEYS.PAYROLL, JSON.stringify(payroll));
+  safeSet(STORAGE_KEYS.PAYROLL, payroll);
 };
 
 // Formato de moneda profesional
 export const formatCurrency = (amount) => {
+  const validAmount = Number(amount) || 0;
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0
-  }).format(amount);
+  }).format(validAmount);
 };
 
 // Formato de fecha legible
 export const formatDateFriendly = (dateStr) => {
   if (!dateStr) return 'Fecha por definir';
   try {
-    const [year, month, day] = dateStr.split('-');
-    const date = new Date(year, month - 1, day);
+    const parts = String(dateStr).split('T')[0].split('-');
+    if (parts.length !== 3) return dateStr;
+    const [year, month, day] = parts;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    if (isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString('es-ES', {
       weekday: 'short',
       year: 'numeric',
@@ -207,17 +229,15 @@ export const checkEquipmentAvailability = (
   let reservedCount = 0;
   
   allBookings.forEach(booking => {
-    // Si estamos editando una reserva existente, excluimos sus propios ítems
     if (currentBookingId && booking.id === currentBookingId) return;
 
     if (booking.status === 'Aprobado' || booking.status === 'En Evento') {
       const bStart = booking.eventDate;
       const bEnd = booking.endDate || booking.eventDate;
       
-      // Dos rangos se solapan si targetDate <= bEnd Y checkEnd >= bStart
       const overlaps = targetDate <= bEnd && checkEnd >= bStart;
       
-      if (overlaps) {
+      if (overlaps && Array.isArray(booking.items)) {
         booking.items.forEach(bItem => {
           if (bItem.equipmentId === equipmentId) {
             reservedCount += Number(bItem.quantity || 1);
@@ -235,12 +255,13 @@ export const checkEquipmentAvailability = (
     }
   });
 
-  const availableStock = Math.max(0, item.totalStock - reservedCount - damagedCount);
+  const totalStock = Number(item.totalStock) || 0;
+  const availableStock = Math.max(0, totalStock - reservedCount - damagedCount);
 
   return {
     equipmentId,
     equipmentName: item.name,
-    totalStock: item.totalStock,
+    totalStock,
     reservedCount,
     damagedCount,
     availableStock,
@@ -260,16 +281,17 @@ export const generateWhatsAppLink = ({
   rentalHours = null,
   eventStartTime = null,
   eventLocation,
-  items,
-  totalAmount,
+  items = [],
+  totalAmount = 0,
   notes,
   adminWhatsApp = null
 }) => {
   const settings = getStoredSettings();
-  const targetNumber = (adminWhatsApp || settings.whatsappNumber).replace(/\D/g, '');
+  const rawNumber = adminWhatsApp || settings.whatsappNumber || '573000000000';
+  const targetNumber = rawNumber.replace(/\D/g, '');
 
-  let message = `🔊 *COTIZACIÓN DE ALQUILER - ${settings.businessName.toUpperCase()}* 🎧\n\n`;
-  message += `📌 *Solicitud:* #${orderId}\n`;
+  let message = `🔊 *COTIZACIÓN DE ALQUILER - ${(settings.businessName || 'SOUND CONTROL').toUpperCase()}* 🎧\n\n`;
+  message += `📌 *Solicitud:* #${orderId || 'WEB'}\n`;
   message += `👤 *Cliente:* ${clientName || 'Por confirmar'}\n`;
   message += `📱 *Teléfono:* ${clientPhone || 'No indicado'}\n`;
   
@@ -286,7 +308,8 @@ export const generateWhatsAppLink = ({
   message += `\n📦 *EQUIPOS & SERVICIOS SELECCIONADOS:*\n`;
 
   items.forEach((item, index) => {
-    message += `  ${index + 1}. ${item.quantity}x ${item.name} (${formatCurrency(item.price * item.quantity)})\n`;
+    const lineTotal = (Number(item.price) || 0) * (Number(item.quantity) || 1);
+    message += `  ${index + 1}. ${item.quantity || 1}x ${item.name || 'Equipo'} (${formatCurrency(lineTotal)})\n`;
   });
 
   message += `\n💰 *VALOR TOTAL ESTIMADO:* ${formatCurrency(totalAmount)}\n`;
@@ -303,8 +326,8 @@ export const generateWhatsAppLink = ({
 };
 
 // GENERADOR DE MENSAJE WHATSAPP PARA COBRO DE GARANTÍA O REPORTE DE DAÑO
-export const generateDamageReportWhatsAppLink = ({ repair, businessName, djPhone }) => {
-  const clientPhone = (repair.clientPhone || '').replace(/\D/g, '');
+export const generateDamageReportWhatsAppLink = ({ repair, businessName, djPhone = '' }) => {
+  const clientPhone = (repair.clientPhone || djPhone || '').replace(/\D/g, '');
   let msg = `⚠️ *INFORME TÉCNICO DE NOVEDAD & GARANTÍA - ${businessName || 'SOUND CONTROL'}*\n\n`;
   msg += `Hola ${repair.clientName || 'estimado cliente'}, te informamos que en la revisión técnica de retorno de tu evento *#${repair.bookingId || 'N/A'}*, se identificó una novedad en los equipos:\n\n`;
   msg += `🔧 *Equipo Afectado:* ${repair.equipmentName}\n`;
@@ -321,12 +344,11 @@ export const generateDamageReportWhatsAppLink = ({ repair, businessName, djPhone
   return `https://wa.me/${clientPhone}?text=${encodeURIComponent(msg)}`;
 };
 
-// COMPRESOR Y PROCESADOR DE IMÁGENES (Celular / Cámara / PC)
-// Convierte fotos pesadas de celulares en JPEG nítido de ~90KB para almacenamiento local fluido
+// COMPRESOR Y PROCESADOR DE IMÁGENES
 export const processImageFile = (file, maxDim = 900, quality = 0.82) => {
   return new Promise((resolve, reject) => {
     if (!file) return resolve(null);
-    if (!file.type.startsWith('image/')) {
+    if (!file.type || !file.type.startsWith('image/')) {
       return reject(new Error('El archivo seleccionado no es una imagen válida.'));
     }
 
@@ -349,10 +371,13 @@ export const processImageFile = (file, maxDim = 900, quality = 0.82) => {
             }
           }
 
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+          if (!ctx) {
+            return reject(new Error('No se pudo inicializar el contexto de procesamiento gráfico.'));
+          }
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           const dataUrl = canvas.toDataURL('image/jpeg', quality);
           resolve(dataUrl);
         } catch (err) {
@@ -366,4 +391,3 @@ export const processImageFile = (file, maxDim = 900, quality = 0.82) => {
     reader.readAsDataURL(file);
   });
 };
-

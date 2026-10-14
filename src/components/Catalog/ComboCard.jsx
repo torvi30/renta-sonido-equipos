@@ -1,5 +1,5 @@
-import React, { useState, memo } from 'react';
-import { Package, Sparkles, CheckCircle2, ChevronDown, ChevronUp, Plus, ShieldCheck } from 'lucide-react';
+import { useState, memo } from 'react';
+import { Package, Sparkles, CheckCircle2, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
 function ComboCard({ 
@@ -77,7 +77,7 @@ function ComboCard({
             Equipos Principales Incluidos:
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            {combo.items.map((item, idx) => (
+            {combo.items && combo.items.map((item, idx) => (
               <div 
                 key={idx}
                 className="flex items-center gap-1.5 text-xs text-slate-200 bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800"
@@ -95,7 +95,8 @@ function ComboCard({
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-xs font-bold text-cyan-400 hover:text-cyan-300"
+              aria-expanded={expanded}
+              className="flex items-center gap-1 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
             >
               <span>{expanded ? 'Ocultar checklist de cables' : `Ver lista de ${combo.checklist.length} cables y accesorios`}</span>
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -136,6 +137,7 @@ function ComboCard({
         </div>
 
         <button
+          type="button"
           onClick={handleAdd}
           className="flex items-center gap-2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-black font-extrabold px-4 py-2.5 rounded-xl text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition-all transform active:scale-95"
         >

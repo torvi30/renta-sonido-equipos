@@ -1,8 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { X, DollarSign, CreditCard, CheckCircle2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../../services/storageService';
 
 export default function PaymentModal({ isOpen, onClose, booking, onSavePayment }) {
+  const [depositAmount, setDepositAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Nequi');
+  const [paymentNotes, setPaymentNotes] = useState('');
+
+  // Sincronizar estado cuando se abra el modal o cambie booking
+  useEffect(() => {
+    if (booking) {
+      const initialDeposit = booking.depositAmount !== undefined && booking.depositAmount !== null && booking.depositAmount > 0
+        ? String(booking.depositAmount)
+        : '';
+      setDepositAmount(initialDeposit);
+      setPaymentMethod(
+        booking.paymentMethod && booking.paymentMethod !== 'Pendiente' ? booking.paymentMethod : 'Nequi'
+      );
+      setPaymentNotes(booking.paymentNotes || '');
+    }
+  }, [booking, isOpen]);
+
   // Manejar Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -14,17 +32,6 @@ export default function PaymentModal({ isOpen, onClose, booking, onSavePayment }
   }, [isOpen, onClose]);
 
   if (!isOpen || !booking) return null;
-
-  // Manejar el monto como String para permitir borrar el 0 completamente sin que reaparezca
-  const initialDeposit = booking.depositAmount !== undefined && booking.depositAmount !== null && booking.depositAmount > 0
-    ? String(booking.depositAmount)
-    : '';
-
-  const [depositAmount, setDepositAmount] = useState(initialDeposit);
-  const [paymentMethod, setPaymentMethod] = useState(
-    booking.paymentMethod && booking.paymentMethod !== 'Pendiente' ? booking.paymentMethod : 'Nequi'
-  );
-  const [paymentNotes, setPaymentNotes] = useState(booking.paymentNotes || '');
 
   const total = Number(booking.totalAmount) || 0;
   const numericDeposit = depositAmount === '' ? 0 : Math.max(0, Number(depositAmount) || 0);

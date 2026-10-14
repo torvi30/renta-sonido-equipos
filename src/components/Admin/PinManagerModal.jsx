@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, ShieldCheck, KeyRound, Eye, EyeOff, Plus, Trash2, 
-  MessageSquare, User, Crown, Zap, Wrench, Check, AlertCircle 
+  MessageSquare, User, Crown, Zap, Wrench, Check 
 } from 'lucide-react';
 import { saveStoredSettings } from '../../services/storageService';
 import { showAlert } from '../../services/alertService';
@@ -12,6 +12,30 @@ export default function PinManagerModal({
   settings, 
   onSettingsSaved 
 }) {
+  const [showPins, setShowPins] = useState(true);
+  const [adminPin, setAdminPin] = useState('1234');
+  const [managerPin, setManagerPin] = useState('2020');
+  const [staffPin, setStaffPin] = useState('3030');
+  const [workersList, setWorkersList] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [newRole, setNewRole] = useState('staff');
+  const [newPin, setNewPin] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+
+  // Sincronizar datos cuando settings esté disponible o el modal se abra
+  useEffect(() => {
+    if (settings) {
+      setAdminPin(settings.adminPin || '1234');
+      setManagerPin(settings.managerPin || '2020');
+      setStaffPin(settings.staffPin || '3030');
+      setWorkersList(settings.workers || [
+        { id: "w-1", name: "Dueño / Propietario", role: "superadmin", pin: "1234", phone: "" },
+        { id: "w-2", name: "Encargado de Operaciones", role: "admin", pin: "2020", phone: "" },
+        { id: "w-3", name: "Técnico de Tarima & Bodega", role: "staff", pin: "3030", phone: "" }
+      ]);
+    }
+  }, [settings, isOpen]);
+
   // Manejar Escape key
   useEffect(() => {
     if (!isOpen) return;
@@ -23,26 +47,6 @@ export default function PinManagerModal({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const [showPins, setShowPins] = useState(true);
-  
-  // PINs principales
-  const [adminPin, setAdminPin] = useState(settings?.adminPin || '1234');
-  const [managerPin, setManagerPin] = useState(settings?.managerPin || '2020');
-  const [staffPin, setStaffPin] = useState(settings?.staffPin || '3030');
-
-  // Lista de trabajadores
-  const [workersList, setWorkersList] = useState(settings?.workers || [
-    { id: "w-1", name: "Dueño / Propietario", role: "superadmin", pin: "1234", phone: "" },
-    { id: "w-2", name: "Encargado de Operaciones", role: "admin", pin: "2020", phone: "" },
-    { id: "w-3", name: "Técnico de Tarima & Bodega", role: "staff", pin: "3030", phone: "" }
-  ]);
-
-  // Formulario nuevo trabajador
-  const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState('staff');
-  const [newPin, setNewPin] = useState('');
-  const [newPhone, setNewPhone] = useState('');
 
   const handleAddWorker = (e) => {
     e.preventDefault();

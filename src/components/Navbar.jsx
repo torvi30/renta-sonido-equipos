@@ -1,21 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  Disc3, ShoppingBag, ShieldCheck, Sparkles, SlidersHorizontal, 
-  MessageCircle, ExternalLink, Lock, Eye, LogOut, Crown, Zap, Wrench, 
-  KeyRound, Menu, X, ChevronRight, Phone
+  Disc3, ShoppingBag, ShieldCheck, MessageCircle, Lock, Menu, X, ChevronRight 
 } from 'lucide-react';
 
 export default function Navbar({ 
-  activeTab, 
   onNavigate, 
-  cartCount, 
+  cartCount = 0, 
   onOpenCart, 
-  onOpenSettings,
-  onOpenPinManager,
-  onLockAdmin,
-  settings,
-  currentRole = 'superadmin',
-  currentWorkerName = '',
+  settings = {},
   isAdminAuthenticated = false
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -23,10 +15,6 @@ export default function Navbar({
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  // ----------------------------------------------------
-  // VISTA PÚBLICA PARA CLIENTES (100% Tienda / Catálogo)
-  // Con menú responsivo completo para móviles y tablets
-  // ----------------------------------------------------
   return (
     <>
       <header className="sticky top-0 z-50 w-full bg-[#0c101a]/95 backdrop-blur-md border-b border-slate-800/80 shadow-lg shadow-black/50">
@@ -78,6 +66,7 @@ export default function Navbar({
               {/* Acceso Admin Rápido si ya inició sesión */}
               {isAdminAuthenticated && (
                 <button
+                  type="button"
                   onClick={() => onNavigate('admin')}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
                   title="Volver al Panel de Administrador"
@@ -103,6 +92,7 @@ export default function Navbar({
 
               {/* Botón de Carrito / Cotización */}
               <button
+                type="button"
                 onClick={onOpenCart}
                 className="relative flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-black shadow-lg shadow-amber-500/20 transition-all transform active:scale-95 shrink-0"
                 title="Ver mi cotización de alquiler"
@@ -118,7 +108,9 @@ export default function Navbar({
 
               {/* Botón Hamburguesa Móvil (Aparece en pantallas < lg) */}
               <button
+                type="button"
                 onClick={() => setIsMobileMenuOpen(true)}
+                aria-label="Abrir menú de navegación"
                 className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition-colors shrink-0"
                 title="Abrir menú"
               >
@@ -126,7 +118,6 @@ export default function Navbar({
               </button>
 
             </div>
-
 
           </div>
         </div>
@@ -154,7 +145,9 @@ export default function Navbar({
                   <span className="font-black text-sm text-white">Menú</span>
                 </div>
                 <button
+                  type="button"
                   onClick={closeMenu}
+                  aria-label="Cerrar menú"
                   className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -216,6 +209,7 @@ export default function Navbar({
             {/* Pie de Menú Móvil: Acceso Administrativo Privado */}
             <div className="pt-4 border-t border-slate-800/80">
               <button
+                type="button"
                 onClick={() => {
                   closeMenu();
                   onNavigate('admin');

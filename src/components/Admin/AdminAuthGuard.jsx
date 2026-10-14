@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Lock, ShieldCheck, Zap, Wrench, X, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Lock, X } from 'lucide-react';
 import { getStoredSettings } from '../../services/storageService';
 
 export default function AdminAuthGuard({ onUnlock, onCancel }) {

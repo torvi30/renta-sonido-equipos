@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { 
   Calendar, Clock, ShoppingBag, Trash2, Plus, Minus, 
   ChevronLeft, ChevronRight, X, MessageSquare, Volume2
@@ -347,7 +347,7 @@ function LiveQuoteSidebar({
               Tu cotización está vacía
             </p>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Haz clic en <strong>"+ Agregar"</strong> en cualquier equipo o combo del catálogo para verlo cotizado en vivo.
+              Haz clic en <strong>&quot;+ Agregar&quot;</strong> en cualquier equipo o combo del catálogo para verlo cotizado en vivo.
             </p>
           </div>
         ) : (

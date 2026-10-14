@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
-  Layout, Image, Type, MapPin, Phone, 
-  HelpCircle, Plus, Trash2, CheckCircle2, Sparkles, Eye, Save, Package,
-  Camera, Upload, Edit2, X, Check, Star, Layers, ExternalLink
+  Layout, Image, Type, MapPin, 
+  HelpCircle, Plus, Trash2, CheckCircle2, Save, Package,
+  Camera, Upload, Edit2, X, Layers
 } from 'lucide-react';
 import { processImageFile } from '../../services/storageService';
 import { showConfirm, showAlert, showError } from '../../services/alertService';

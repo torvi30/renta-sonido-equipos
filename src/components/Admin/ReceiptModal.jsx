@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { X, Printer, Share2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { useEffect } from 'react';
+import { X, Printer, Share2 } from 'lucide-react';
 import { formatCurrency, formatDateFriendly, getStoredSettings } from '../../services/storageService';
 
 export default function ReceiptModal({ isOpen, onClose, booking }) {
@@ -31,7 +31,7 @@ export default function ReceiptModal({ isOpen, onClose, booking }) {
     text += `💵 *Abono Recibido:* ${formatCurrency(booking.depositAmount || 0)} (${booking.paymentMethod})\n`;
     text += `⚠️ *Saldo a Pagar en Sitio:* ${formatCurrency(booking.balanceDue || 0)}\n\n`;
     text += `📦 *EQUIPOS SEPARADOS:*\n`;
-    booking.items.forEach((item, idx) => {
+    booking.items.forEach((item) => {
       text += `• ${item.quantity}x ${item.name}\n`;
     });
     text += `\n_${settings.termsAndConditions}_\n\n`;
